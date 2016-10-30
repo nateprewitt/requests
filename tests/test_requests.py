@@ -1653,6 +1653,41 @@ class TestRequests:
         assert isinstance(s, builtin_str)
         assert s == auth_str
 
+    def test_AuthBase_call(self):
+        ab = requests.auth.AuthBase()
+        with pytest.raises(NotImplementedError) as e:
+            ab(None)
+
+    def test_HTTPBasicAuth_eq(self):
+        user1 = requests.auth.HTTPBasicAuth('user', 'pass')
+        user1_clone = requests.auth.HTTPBasicAuth('user', 'pass')
+        assert user1 == user1_clone
+
+    def test_HTTPBasicAuth_eq_fail(self):
+        user1 = requests.auth.HTTPBasicAuth('user', 'pass')
+        user2 = requests.auth.HTTPBasicAuth('tim', '1234')
+        assert not user1 == user2
+
+    def test_HTTPBasicAuth_ne(self):
+        user1 = requests.auth.HTTPBasicAuth('user', 'pass')
+        user2 = requests.auth.HTTPBasicAuth('tim', '1234')
+        assert user1 != user2
+
+    def test_HTTPBasicAuth_ne_fail(self):
+        user1 = requests.auth.HTTPBasicAuth('user', 'pass')
+        user1_clone = requests.auth.HTTPBasicAuth('user', 'pass')
+        assert not user1 != user1_clone
+
+    def test_HTTPProxyAuth_call(self):
+        req = requests.Request('GET', 'http://example.com')
+        proxyauth = requests.auth.HTTPProxyAuth('user', 'pass')
+        assert 'Proxy-Authorization' not in req.headers
+        req_w_auth = proxyauth(req)
+        # Check the returned object has new header
+        assert 'Proxy-Authorization' in req_w_auth.headers
+        # The original object was also modified because it's a reference
+        assert 'Proxy-Authorization' in req.headers
+
     def test_requests_history_is_saved(self, httpbin):
         r = requests.get(httpbin('redirect/5'))
         total = r.history[-1].history
