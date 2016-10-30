@@ -558,6 +558,18 @@ class TestRequests:
         finally:
             requests.sessions.get_netrc_auth = old_auth
 
+    def test_proxy_headers_from_url(self):
+        url = "https://user:pass@example.com:8080"
+        adap = HTTPAdapter()
+        headers = adap.proxy_headers(url)
+        assert 'Proxy-Authorization' in headers
+
+    def test_proxy_headers_from_url_no_auth(self):
+        url = "https://auth.example.com:8080"
+        adap = HTTPAdapter()
+        headers = adap.proxy_headers(url)
+        assert 'Proxy-Authorization' not in headers
+
     def test_DIGEST_HTTP_200_OK_GET(self, httpbin):
 
         auth = HTTPDigestAuth('user', 'pass')
