@@ -217,7 +217,7 @@ class HTTPAdapter(BaseAdapter):
                 cert_loc = DEFAULT_CA_BUNDLE_PATH
 
             if not cert_loc:
-                raise Exception("Could not find a suitable SSL CA certificate bundle.")
+                raise SSLError("Could not find a suitable SSL CA certificate bundle.")
 
             conn.cert_reqs = 'CERT_REQUIRED'
 

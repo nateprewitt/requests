@@ -24,7 +24,7 @@ from requests.cookies import (
 from requests.exceptions import (
     ConnectionError, ConnectTimeout, InvalidSchema, InvalidURL,
     MissingSchema, ReadTimeout, Timeout, RetryError, TooManyRedirects,
-    ProxyError, InvalidHeader, UnrewindableBodyError)
+    ProxyError, InvalidHeader, UnrewindableBodyError, SSLError)
 from requests.models import PreparedRequest
 from requests.structures import CaseInsensitiveDict
 from requests.sessions import SessionRedirectMixin
@@ -777,6 +777,13 @@ class TestRequests:
         warnings_category = tuple(
             item.category.__name__ for item in warning_records)
         assert warnings_category == warnings_expected
+
+    def test_cert_verify_no_bundle(self):
+        import requests.adapters
+        adap = requests.adapters.HTTPAdapter()
+        requests.adapters.DEFAULT_CA_BUNDLE_PATH = None
+        with pytest.raises(SSLError) as e:
+            adap.cert_verify(None, 'https://example.com', True, None)
 
     def test_urlencoded_get_query_multivalued_param(self, httpbin):
 
