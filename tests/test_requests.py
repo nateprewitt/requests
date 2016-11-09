@@ -402,6 +402,31 @@ class TestRequests:
         assert cookies['foo'] == 'bar'
         assert cookies['cookie'] == 'tasty'
 
+    def test_cookiejar_from_dict_w_kwargs(self):
+       httpbin_cdict = {'test': 'cookie',
+                        'weare': 'secure'}
+       google_cdict = {'my': 'cookieval',
+                       'creds': 'password123'}
+       httpbin_kwargs = {'domain': '.httpbin.org',
+                         'path': '/get',
+                         'expires': '631152000'}
+
+       cj = cookiejar_from_dict(httpbin_cdict, **httpbin_kwargs)
+       # add other cookies to dict
+       cookiejar_from_dict(google_cdict, cj, domain='account.google.com')
+
+       for cookie in cj:
+           if cookie.name in httpbin_cdict:
+               cookie.value == httpbin_cdict[cookie.name]
+               cookie.domain == '.httpbin.org'
+               cookie.path == '/get'
+               cookie.expires == '631152000'
+           elif cookie.name in google_cdict:
+               cookie.value == google_cdict[cookie.name]
+               cookie.domain == 'account.google.com'
+               cookie.path == None
+               cookie.expires == None
+
     def test_requests_in_history_are_not_overridden(self, httpbin):
         resp = requests.get(httpbin('redirect/3'))
         urls = [r.url for r in resp.history]
