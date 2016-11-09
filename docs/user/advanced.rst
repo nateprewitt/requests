@@ -64,6 +64,17 @@ If you want to manually add cookies to your session, use the
 :ref:`Cookie utility functions <api-cookies>` to manipulate
 :attr:`Session.cookies <requests.Session.cookies>`.
 
+It is *highly* recommended that you supply a **domain** parameter with your
+cookie dictionary, as shown below, to avoid accidental cookie leaking to
+other domains::
+    s = requests.Session()
+
+    cookie_dict = {'my-cookie': 'tasty'}
+    add_dict_to_cookiejar(s.cookies, cookie_dict, domain='httpbin.org')
+    print(s.cookies)
+    # <RequestsCookieJar[<Cookie my-cookie=tasty for httpbin.org/>]>
+
+
 Sessions can also be used as context managers::
 
     with requests.Session() as s:
