@@ -325,7 +325,7 @@ def dict_from_cookiejar(cj):
     return cookie_dict
 
 
-def add_dict_to_cookiejar(cj, cookie_dict):
+def add_dict_to_cookiejar(cj, cookie_dict, **kwargs):
     """Returns a CookieJar from a key/value dictionary.
 
     :param cj: CookieJar to insert cookies into.
@@ -333,7 +333,7 @@ def add_dict_to_cookiejar(cj, cookie_dict):
     :rtype: CookieJar
     """
 
-    return cookiejar_from_dict(cookie_dict, cj)
+    return cookiejar_from_dict(cookie_dict, cj, **kwargs)
 
 
 def get_encodings_from_content(content):
