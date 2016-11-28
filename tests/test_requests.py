@@ -845,6 +845,12 @@ class TestRequests:
         assert conn.ca_cert_dir == dir_val
         assert conn.ca_certs == certs_val
 
+    def test_ssl_with_bad_ca_cert(self, httpbin_secure):
+        s = requests.Session()
+        r = requests.Request('GET', httpbin_secure('get'))
+        with pytest.raises(SSLError):
+            s.send(r.prepare(), verify='None', cert=None)
+
     def test_urlencoded_get_query_multivalued_param(self, httpbin):
 
         r = requests.get(httpbin('get'), params=dict(test=['foo', 'baz']))
