@@ -2228,6 +2228,14 @@ def test_proxy_env_vars_override_default(var, url, proxy):
         assert scheme in proxies
         assert proxies[scheme] == proxy
 
+def test_proxy_reused_if_available():
+    proxy = 'socks5://user:password@proxy.com:9876'
+    adapt = requests.adapters.HTTPAdapter()
+    manager = adapt.proxy_manager_for(proxy)
+    assert proxy in adapt.proxy_manager
+    assert manager is adapt.proxy_manager[proxy]
+    manager2 = adapt.proxy_manager_for(proxy)
+    assert manager is manager2
 
 @pytest.mark.parametrize(
     'data', (
