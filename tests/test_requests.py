@@ -812,6 +812,19 @@ class TestRequests:
         assert conn.ca_cert_dir == dir_val
         assert conn.ca_certs == certs_val
 
+    @pytest.mark.parametrize(
+        'cert_val, cert, key', (
+            ('certfile.cert', 'certfile.cert', None),
+            (('otherfile.cert', 'keyfile.key'), 'otherfile.cert', 'keyfile.key')
+        )
+    )
+    def test_cert_verify_with_cert_params(self, cert_val, cert, key):
+        adap = requests.adapters.HTTPAdapter()
+        conn = adap.get_connection('https://example.com')
+        adap.cert_verify(conn, 'https://example.com', None, cert=cert_val)
+        assert conn.cert_file == cert
+        assert conn.key_file == key
+
     def test_urlencoded_get_query_multivalued_param(self, httpbin):
 
         r = requests.get(httpbin('get'), params=dict(test=['foo', 'baz']))
