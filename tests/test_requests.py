@@ -830,6 +830,21 @@ class TestRequests:
         with pytest.raises(IOError):
             adap.cert_verify(None, 'https://example.com', True, None)
 
+    @pytest.mark.parametrize(
+        'loc, dir_val, certs_val', (
+            ('../', '../', None),
+            ('../requests/cacert.pem', None, '../requests/cacert.pem')
+        )
+    )
+    def test_cert_verify_set_correctly(self, loc, dir_val, certs_val):
+        adap = requests.adapters.HTTPAdapter()
+        conn = adap.get_connection('https://example.com')
+        assert conn.ca_cert_dir is None
+        assert conn.ca_certs is None
+        adap.cert_verify(conn, 'https://example.com', loc, None)
+        assert conn.ca_cert_dir == dir_val
+        assert conn.ca_certs == certs_val
+
     def test_urlencoded_get_query_multivalued_param(self, httpbin):
 
         r = requests.get(httpbin('get'), params=dict(test=['foo', 'baz']))
