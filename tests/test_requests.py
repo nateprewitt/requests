@@ -804,7 +804,7 @@ class TestRequests:
         )
     )
     def test_cert_verify_set_correctly(self, loc, dir_val, certs_val):
-        adap = requests.adapters.HTTPAdapter()
+        adap = HTTPAdapter()
         conn = adap.get_connection('https://example.com')
         assert conn.ca_cert_dir is None
         assert conn.ca_certs is None
@@ -819,7 +819,7 @@ class TestRequests:
         )
     )
     def test_cert_verify_with_cert_params(self, cert_val, cert, key):
-        adap = requests.adapters.HTTPAdapter()
+        adap = HTTPAdapter()
         conn = adap.get_connection('https://example.com')
         adap.cert_verify(conn, 'https://example.com', None, cert=cert_val)
         assert conn.cert_file == cert
@@ -1215,6 +1215,30 @@ class TestRequests:
         r.raw = io.BytesIO(b'the content')
         with pytest.raises(TypeError):
             chunks = r.iter_content("1024")
+
+    def test_HTTPAdapter_build_response(self):
+        adapt = HTTPAdapter()
+        resp = requests.Response()
+        req = requests.Request('GET', 'https://example.com')
+        # Set up Response
+        resp.status = 200
+        resp.headers = {'Content-Type': 'text/plain',
+                        'Content-Length': '0'}
+        resp.reason = "Because we can"
+        adapt_resp = adapt.build_response(req, resp)
+
+        # Test attrs are set correctly
+        assert adapt_resp.url == req.url
+        assert isinstance(adapt_resp.url, str)
+        assert adapt_resp.status_code == resp.status
+        assert adapt_resp.headers == resp.headers
+        assert adapt_resp.raw is resp
+
+        # Test for unicode URL
+        req.url = u'https://löydy.com'
+        unicode_resp = adapt.build_response(req, resp)
+        assert unicode_resp.url == req.url
+        assert isinstance(unicode_resp.url, str)
 
     def test_request_and_response_are_pickleable(self, httpbin):
         r = requests.get(httpbin('get'))
