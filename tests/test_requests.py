@@ -1322,6 +1322,14 @@ class TestRequests:
         assert r.status_code == 200
         assert r.url.lower() == url.lower()
 
+    def test_BaseAdapter(self, httpbin):
+        r = requests.Request('GET', httpbin('get'))
+        ba = requests.adapters.BaseAdapter()
+        with pytest.raises(NotImplementedError):
+            ba.send(r)
+        with pytest.raises(NotImplementedError):
+            ba.close()
+
     def test_transport_adapter_ordering(self):
         s = requests.Session()
         order = ['https://', 'http://']
