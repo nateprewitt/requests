@@ -14,7 +14,7 @@ test-readme:
 	pipenv run python setup.py check -r -s
 
 coverage:
-	pipenv run py.test --cov-config .coveragerc --verbose --cov-report term --cov-report xml --cov=requests tests
+	pipenv run py.test --cov-config .coveragerc --verbose --cov-report term-missing --cov-report xml --cov=requests tests
 
 certs:
 	curl http://ci.kennethreitz.org/job/ca-bundle/lastSuccessfulBuild/artifact/cacerts.pem -o requests/cacert.pem
