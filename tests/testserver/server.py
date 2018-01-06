@@ -4,9 +4,9 @@ import threading
 import socket
 import select
 
+CHUNKS = 65536
 
 def consume_socket_content(sock, timeout=0.5):
-    chunks = 65536
     content = b''
 
     while True:
@@ -14,12 +14,17 @@ def consume_socket_content(sock, timeout=0.5):
         if not more_to_read:
             break
 
-        new_content = sock.recv(chunks)
+        new_content = sock.recv(CHUNKS)
         if not new_content:
             break
 
         content += new_content
 
+    return content
+
+def consume_chunk_from_socket(sock, timeout=0.5):
+    more_to_read = select.select([sock], [], [], timeout)[0]
+    content = sock.recv(CHUNKS) if more_to_read else b''
     return content
 
 

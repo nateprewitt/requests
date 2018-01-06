@@ -3,8 +3,9 @@
 import pytest
 import threading
 import requests
+import json
 
-from tests.testserver.server import Server, consume_socket_content
+from tests.testserver.server import Server, consume_socket_content, consume_chunk_from_socket
 
 from .utils import override_environ
 
@@ -236,6 +237,7 @@ def test_redirect_rfc1808_to_non_ascii_location():
 
         close_server.set()
 
+
 def test_fragment_not_sent_with_request():
     """Verify that the fragment portion of a URI isn't sent to the server."""
     def response_handler(sock):
@@ -264,6 +266,7 @@ def test_fragment_not_sent_with_request():
             assert frag not in body
 
         close_server.set()
+
 
 def test_fragment_update_on_redirect():
     """Verify we only append previous fragment if one doesn't exist on new
@@ -307,3 +310,53 @@ def test_fragment_update_on_redirect():
         assert r.url == 'http://{0}:{1}/final-url/#relevant-section'.format(host, port)
 
         close_server.set()
+
+
+def test_send_chunked_request():
+
+    def chunked_req_handler(sock):
+        chunks = []
+        while True:
+            chunk = consume_chunk_from_socket(sock, timeout=0.5)
+            if not chunk:
+                break
+            chunks.append(chunk)
+
+        location = u'//{0}:{1}'.format(host, port)
+        content = json.dumps(chunks)
+        sock.send(
+            b'HTTP/1.1 200 OK\r\n'
+            b'Content-Length: {0}\r\n'
+            b'\r\n'
+            b'{1}\r\n'.format(len(content), content)
+        )
+
+    close_server = threading.Event()
+    server = Server(chunked_req_handler, wait_to_close_event=close_server)
+
+    with server as (host, port):
+        url = u'http://{0}:{1}'.format(host, port)
+        data = [b'these are', b'the chu', b'nked pieces of', b'data']
+        chunks = (i for i in data)
+
+        # Verify request claims to be chunked
+        r = requests.post(url=url, data=chunks, stream=True)
+        assert r.status_code == 200
+        assert r.request.headers.get('Transfer-Encoding') == 'chunked'
+
+        # Parse raw response
+        content = r.json()
+        status_and_headers, first_chunk_size = content[0].split('\r\n\r\n')
+        status_line, headers = status_and_headers.split('\r\n', 1)
+        body_chunks = [first_chunk_size]
+        body_chunks.extend(content[1:])
+
+        assert status_line == "POST / HTTP/1.1"
+        for k, v in r.request.headers.items():
+            assert '{0}: {1}'.format(k, v) in headers
+
+        # Verify body is actually being received in chunks
+        assert len(body_chunks) >= len(data)
+        expected_body = ['{0}\r\n{1}'.format(hex(len(i))[2:], i) for i in data]
+        expected_body.extend(['0', '\r\n'])
+        assert ''.join(body_chunks) == '\r\n'.join(expected_body)
