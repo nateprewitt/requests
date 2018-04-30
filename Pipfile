@@ -19,6 +19,7 @@ docutils = "*"
 tox = "*"
 detox = "*"
 httpbin = "==0.5.0"
+flask = "==0.12"
 
 [packages]
 "e1839a8" = {path = ".", editable = true, extras=["socks"]}
