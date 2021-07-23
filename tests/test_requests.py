@@ -2571,3 +2571,8 @@ class TestPreparingURLs(object):
         data = {"foo": float("nan")}
         with pytest.raises(requests.exceptions.InvalidJSONError):
           r = requests.post(httpbin('post'), json=data)
+
+    def test_json_with_bad_encoding(self, httpbin):
+        r = requests.get(httpbin('bytes/100'))
+        with pytest.raises(requests.exceptions.JSONDecodeError):
+            r.json()
