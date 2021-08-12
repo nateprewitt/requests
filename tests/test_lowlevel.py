@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+import os
+
 import pytest
 import threading
 import requests
@@ -307,3 +309,45 @@ def test_fragment_update_on_redirect():
         assert r.url == 'http://{}:{}/final-url/#relevant-section'.format(host, port)
 
         close_server.set()
+
+def test_chunked_transfer_encoding():
+    """Validate Transfer-Encoding: chunked behavior, byte for byte,
+    to ensure backwards compatibility when moving our implementation
+    to rely on urllib3.
+    """
+
+    def response_handler(sock):
+        incoming_request = consume_socket_content(sock, timeout=0.5)
+        request_body = incoming_request.split(b'\r\n\r\n')[1]
+        response = (
+            'HTTP/1.1 200 OK\r\n'
+            'Content-Length: {}\r\n\r\n'
+        ).format(request_body)
+
+        sock.send(
+            response.encode('iso-8859-1')+request_body
+        )
+
+    test_dir = os.sep.join(['tests', 'data', 'chunked_encoding'])
+    files = [f for f in os.listdir(test_dir) if f.endswith('.req')]
+
+    for req in files:
+        with open(os.sep.join([test_dir, req]), 'rb') as f:
+            chunks = iter(f.read().split(b'\n'))
+
+        resp = req.replace('.req', '.resp')
+        with open(os.sep.join([test_dir, resp]), 'rb') as f:
+            expected_request = f.read()
+
+        close_server = threading.Event()
+        server = Server(response_handler, wait_to_close_event=close_server)
+
+        with server as (host, port):
+            url = 'http://{}:{}/'.format(host, port)
+            r = requests.post(url, data=chunks)
+            raw_request = r.content
+
+            assert r.status_code == 200
+            assert raw_request == expected_request
+
+            close_server.set()
