@@ -28,9 +28,10 @@ from . import certs
 from ._internal_utils import to_native_string
 from .compat import parse_http_list as _parse_list_header
 from .compat import (
-    quote, urlparse, bytes, str, unquote, getproxies,
+    quote, bytes, str, unquote, getproxies,
     proxy_bypass, urlunparse, basestring, integer_types, is_py3,
-    proxy_bypass_environment, getproxies_environment, Mapping)
+    proxy_bypass_environment, getproxies_environment, parse_url,
+    urlparse, Mapping)
 from .cookies import cookiejar_from_dict
 from .structures import CaseInsensitiveDict
 from .exceptions import (
@@ -203,14 +204,7 @@ def get_netrc_auth(url, raise_errors=False):
         if netrc_path is None:
             return
 
-        ri = urlparse(url)
-
-        # Strip port numbers from netloc. This weird `if...encode`` dance is
-        # used for Python 3.2, which doesn't support unicode literals.
-        splitstr = b':'
-        if isinstance(url, str):
-            splitstr = splitstr.decode('ascii')
-        host = ri.netloc.split(splitstr)[0]
+        host = parse_url(url).host
 
         try:
             _netrc = netrc(netrc_path).authenticators(host)
@@ -780,7 +774,6 @@ def should_bypass_proxies(url, no_proxy):
                     return True
 
     with set_environ('no_proxy', no_proxy_arg):
-        # parsed.hostname can be `None` in cases such as a file URI.
         try:
             bypass = proxy_bypass(parsed.hostname)
         except (TypeError, socket.gaierror):
@@ -811,14 +804,14 @@ def select_proxy(url, proxies):
     :param proxies: A dictionary of schemes or schemes and hosts to proxy URLs
     """
     proxies = proxies or {}
-    urlparts = urlparse(url)
-    if urlparts.hostname is None:
+    urlparts = parse_url(url)
+    if urlparts.host is None:
         return proxies.get(urlparts.scheme, proxies.get('all'))
 
     proxy_keys = [
-        urlparts.scheme + '://' + urlparts.hostname,
+        urlparts.scheme + '://' + urlparts.host,
         urlparts.scheme,
-        'all://' + urlparts.hostname,
+        'all://' + urlparts.host,
         'all',
     ]
     proxy = None
@@ -932,15 +925,23 @@ def prepend_scheme_if_needed(url, new_scheme):
 
     :rtype: str
     """
-    scheme, netloc, path, params, query, fragment = urlparse(url, new_scheme)
+    parsed_url = parse_url(url)
+    scheme, auth, host, port, path, query, fragment = parsed_url
+    netloc = parsed_url.netloc
 
-    # urlparse is a finicky beast, and sometimes decides that there isn't a
-    # netloc present. Assume that it's being over-cautious, and switch netloc
-    # and path if urlparse decided there was no netloc.
+    # urlparse and parse_url share behavior where it determines there isn't a
+    # netloc present in some urls. Historically, we assumed that it's being
+    # over-cautious, and switched netloc and path in this case. This
+    # conditional is left here for backwards compatibility.
     if not netloc:
         netloc, path = path, netloc
 
-    return urlunparse((scheme, netloc, path, params, query, fragment))
+    if scheme is None:
+        scheme = new_scheme
+    if path is None:
+        path = ''
+
+    return urlunparse((scheme, netloc, path, '', query, fragment))
 
 
 def get_auth_from_url(url):
@@ -949,10 +950,13 @@ def get_auth_from_url(url):
 
     :rtype: (str,str)
     """
-    parsed = urlparse(url)
+    parsed = parse_url(url)
 
     try:
-        auth = (unquote(parsed.username), unquote(parsed.password))
+        auth_parts = parsed.auth.split(':')
+        if len(auth_parts) < 2:
+            auth_parts.append('')
+        auth = (unquote(auth_parts[0]), unquote(auth_parts[1]))
     except (AttributeError, TypeError):
         auth = ('', '')
 
@@ -991,15 +995,21 @@ def urldefragauth(url):
 
     :rtype: str
     """
-    scheme, netloc, path, params, query, fragment = urlparse(url)
+
+    parsed_url = parse_url(url)
+    scheme, auth, host, port, path, query, fragment = parsed_url
 
     # see func:`prepend_scheme_if_needed`
+    netloc = parsed_url.netloc
     if not netloc:
-        netloc, path = path, netloc
+        netloc, path = path, ''
 
     netloc = netloc.rsplit('@', 1)[-1]
+    if scheme is None:
+        # urlunparse cannot tolerate a non-string scheme
+        scheme = ''
 
-    return urlunparse((scheme, netloc, path, params, query, ''))
+    return urlunparse((scheme, netloc, path, '', query, ''))
 
 
 def rewind_body(prepared_request):

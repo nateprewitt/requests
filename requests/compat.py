@@ -79,3 +79,5 @@ elif is_py3:
     basestring = (str, bytes)
     numeric_types = (int, float)
     integer_types = (int,)
+
+from urllib3.util import parse_url

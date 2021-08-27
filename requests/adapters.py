@@ -13,7 +13,6 @@ import socket
 
 from urllib3.poolmanager import PoolManager, proxy_from_url
 from urllib3.response import HTTPResponse
-from urllib3.util import parse_url
 from urllib3.util import Timeout as TimeoutSauce
 from urllib3.util.retry import Retry
 from urllib3.exceptions import ClosedPoolError
@@ -29,7 +28,7 @@ from urllib3.exceptions import ResponseError
 from urllib3.exceptions import LocationValueError
 
 from .models import Response
-from .compat import urlparse, basestring
+from .compat import parse_url, basestring
 from .utils import (DEFAULT_CA_BUNDLE_PATH, extract_zipped_paths,
                     get_encoding_from_headers, prepend_scheme_if_needed,
                     get_auth_from_url, urldefragauth, select_proxy)
@@ -310,9 +309,8 @@ class HTTPAdapter(BaseAdapter):
             conn = proxy_manager.connection_from_url(url)
         else:
             # Only scheme should be lower case
-            parsed = urlparse(url)
-            url = parsed.geturl()
-            conn = self.poolmanager.connection_from_url(url)
+            parsed = parse_url(url)
+            conn = self.poolmanager.connection_from_url(parsed.url)
 
         return conn
 
@@ -341,13 +339,13 @@ class HTTPAdapter(BaseAdapter):
         :rtype: str
         """
         proxy = select_proxy(request.url, proxies)
-        scheme = urlparse(request.url).scheme
+        scheme = parse_url(request.url).scheme
 
         is_proxied_http_request = (proxy and scheme != 'https')
         using_socks_proxy = False
         if proxy:
-            proxy_scheme = urlparse(proxy).scheme.lower()
-            using_socks_proxy = proxy_scheme.startswith('socks')
+            proxy_scheme = parse_url(proxy).scheme or ''
+            using_socks_proxy = proxy_scheme.lower().startswith('socks')
 
         url = request.path_url
         if is_proxied_http_request and not using_socks_proxy:

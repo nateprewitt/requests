@@ -14,7 +14,7 @@ import time
 import calendar
 
 from ._internal_utils import to_native_string
-from .compat import cookielib, urlparse, urlunparse, Morsel, MutableMapping
+from .compat import cookielib, parse_url, urlparse, urlunparse, Morsel, MutableMapping
 
 try:
     import threading
@@ -43,7 +43,7 @@ class MockRequest(object):
         return self.type
 
     def get_host(self):
-        return urlparse(self._r.url).netloc
+        return parse_url(self._r.url).netloc
 
     def get_origin_req_host(self):
         return self.get_host()
@@ -55,10 +55,10 @@ class MockRequest(object):
             return self._r.url
         # If they did set it, retrieve it and reconstruct the expected domain
         host = to_native_string(self._r.headers['Host'], encoding='utf-8')
-        parsed = urlparse(self._r.url)
+        parsed = parse_url(self._r.url)
         # Reconstruct the URL as we expect it
         return urlunparse([
-            parsed.scheme, host, parsed.path, parsed.params, parsed.query,
+            parsed.scheme, host, parsed.path, '', parsed.query,
             parsed.fragment
         ])
 

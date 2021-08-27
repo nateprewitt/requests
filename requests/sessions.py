@@ -14,7 +14,7 @@ from datetime import timedelta
 from collections import OrderedDict
 
 from .auth import _basic_auth_str
-from .compat import cookielib, is_py3, urljoin, urlparse, Mapping
+from .compat import cookielib, is_py3, parse_url, urljoin, urlparse, Mapping
 from .cookies import (
     cookiejar_from_dict, extract_cookies_to_jar, RequestsCookieJar, merge_cookies)
 from .models import Request, PreparedRequest, DEFAULT_REDIRECT_LIMIT
@@ -118,9 +118,9 @@ class SessionRedirectMixin(object):
 
     def should_strip_auth(self, old_url, new_url):
         """Decide whether Authorization header should be removed when redirecting"""
-        old_parsed = urlparse(old_url)
-        new_parsed = urlparse(new_url)
-        if old_parsed.hostname != new_parsed.hostname:
+        old_parsed = parse_url(old_url)
+        new_parsed = parse_url(new_url)
+        if old_parsed.host != new_parsed.host:
             return True
         # Special case: allow http -> https redirect when using the standard
         # ports. This isn't specified by RFC 7235, but is kept to avoid
@@ -148,7 +148,7 @@ class SessionRedirectMixin(object):
         hist = []  # keep track of history
 
         url = self.get_redirect_target(resp)
-        previous_fragment = urlparse(req.url).fragment
+        previous_fragment = parse_url(req.url).fragment
         while url:
             prepared_request = req.copy()
 
@@ -170,7 +170,7 @@ class SessionRedirectMixin(object):
 
             # Handle redirection without scheme (see: RFC 1808 Section 4)
             if url.startswith('//'):
-                parsed_rurl = urlparse(resp.url)
+                parsed_rurl = parse_url(resp.url)
                 url = ':'.join([to_native_string(parsed_rurl.scheme), url])
 
             # Normalize url case and attach previous fragment if needed (RFC 7231 7.1.2)
