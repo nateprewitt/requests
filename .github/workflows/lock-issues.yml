@@ -10,6 +10,10 @@ permissions:
 
 jobs:
   action:
+    # Running the lock job on all forks is unnecessary.
+    # Make sure this only runs in the main repo.
+    if: github.repository == 'psf/requests'
+
     runs-on: ubuntu-latest
     steps:
       - uses: dessant/lock-threads@v2
