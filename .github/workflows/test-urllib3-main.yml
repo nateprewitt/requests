@@ -1,0 +1,23 @@
+name: Tests
+  
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python 3.7
+      uses: actions/setup-python@v2
+      with:
+        python-version: "3.7"
+    - name: Install dependencies
+      run: |
+        make
+        # Override with current "main" branch of urllib3
+        pip install git+https://github.com/urllib3/urllib3.git
+    - name: Run tests
+      run: |
+        make ci
