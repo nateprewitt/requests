@@ -1030,26 +1030,22 @@ def check_header_validity(header):
 
     :param header: tuple, in the format (name, value).
     """
-    name, value = header
-
-    supported_types = tuple(HEADER_VALIDATORS.keys())
-    for part in header:
-        if not isinstance(part, supported_types):
+    for n, part in enumerate(header):
+        if isinstance(part, str):
+            validator = HEADER_VALIDATORS[str][n]
+        elif isinstance(part, bytes):
+            validator = HEADER_VALIDATORS[bytes][n]
+        else:
             raise InvalidHeader(
-                f"Header part ({part!r}) from {{{name!r}: {value!r}}} must be "
-                f"of type str or bytes, not {type(part)}"
+                f"Header part ({part!r}) from {header} "
+                f"must be of type str or bytes, not {type(part)}"
             )
 
-    _validate_header_part(name, "name", HEADER_VALIDATORS[type(name)][0])
-    _validate_header_part(value, "value", HEADER_VALIDATORS[type(value)][1])
-
-
-def _validate_header_part(header_part, header_kind, validator):
-    if not validator.match(header_part):
-        raise InvalidHeader(
-            f"Invalid leading whitespace, reserved character(s), or return"
-            f"character(s) in header {header_kind}: {header_part!r}"
-        )
+        if not validator.match(part):
+            raise InvalidHeader(
+                f"Invalid leading whitespace, reserved character(s), "
+                f"or return character(s) in header: {part!r}"
+            )
 
 
 def urldefragauth(url):
