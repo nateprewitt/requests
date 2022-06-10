@@ -1032,8 +1032,9 @@ def check_header_validity(header):
     """
     name, value = header
 
+    supported_types = tuple(HEADER_VALIDATORS.keys())
     for part in header:
-        if type(part) not in HEADER_VALIDATORS:
+        if not isinstance(part, supported_types):
             raise InvalidHeader(
                 f"Header part ({part!r}) from {{{name!r}: {value!r}}} must be "
                 f"of type str or bytes, not {type(part)}"
