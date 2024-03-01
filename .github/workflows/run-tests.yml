@@ -59,6 +59,7 @@ jobs:
       - name: "Combine & check coverage"
         run: |
           python -m coverage combine
+          ls -la .coverage*
           python -m coverage html --skip-covered --skip-empty
           python -m coverage report --ignore-errors --show-missing --fail-under=85
 
