@@ -5,7 +5,7 @@ test:
 	# This runs all of the tests on all supported Python versions.
 	tox -p
 ci:
-	python -m coverage run -m pytest --junitxml=report.xml
+	python -m coverage run -m pytest
 
 test-readme:
 	python -m pip install twine build
