@@ -2965,6 +2965,21 @@ class TestPreparingURLs:
 
         assert client_cert is not None
 
+@mock.patch('requests.adapters.HTTPAdapter._get_connection')
+def test_invoke_get_connection_default_adapter(get_conn_mock, httpbin):
+    s = requests.Session()
+    s.get(httpbin('/get'))
+    assert get_conn_mock.called
+
+@mock.patch('requests.adapters.HTTPAdapter.get_connection')
+def test_invoke_get_connection_custom_adapter(get_conn_mock, httpbin):
+    class MyAdapter(requests.adapters.HTTPAdapter):
+        pass
+
+    s = requests.Session()
+    s.mount('http://', MyAdapter())
+    s.get(httpbin('/get'))
+    assert get_conn_mock.called
 
 def test_json_decode_errors_are_serializable_deserializable():
     json_decode_error = requests.exceptions.JSONDecodeError(

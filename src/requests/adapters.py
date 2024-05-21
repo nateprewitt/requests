@@ -374,10 +374,16 @@ class HTTPAdapter(BaseAdapter):
 
         return response
 
+    def _invoke_get_connection(self, request, verify, proxies, cert):
+        if type(self) is HTTPAdapter:
+            # Replace the existing get_connection without breaking things and
+            # ensure that TLS settings are considered when we interact with
+            # urllib3 HTTP Pools.
+            return self._get_connection(request, verify, proxies, cert)
+        else:
+            return self.get_connection(request.url, proxies)
+
     def _get_connection(self, request, verify, proxies=None, cert=None):
-        # Replace the existing get_connection without breaking things and
-        # ensure that TLS settings are considered when we interact with
-        # urllib3 HTTP Pools
         proxy = select_proxy(request.url, proxies)
         try:
             host_params, pool_kwargs = _urllib3_request_context(request, verify, cert)
@@ -529,7 +535,7 @@ class HTTPAdapter(BaseAdapter):
         """
 
         try:
-            conn = self._get_connection(request, verify, proxies=proxies, cert=cert)
+            conn = self._invoke_get_connection(request, verify, proxies, cert)
         except LocationValueError as e:
             raise InvalidURL(e, request=request)
 
