@@ -5,7 +5,10 @@ requests.models
 This module contains the primary objects that power Requests.
 """
 
+from __future__ import annotations
+
 import datetime
+from typing import TYPE_CHECKING, Any, Iterator, Callable, Mapping
 
 # Import encoding now, to avoid implicit import later.
 # Implicit import within threads may cause LookupError when standard library is in a ZIP,
@@ -68,9 +71,18 @@ from .utils import (
     to_key_val_list,
 )
 
+if TYPE_CHECKING:
+    from http.cookiejar import CookieJar
+
+    from .adapters import HTTPAdapter
+    from .auth import AuthBase
+    from .cookies import RequestsCookieJar
+
+_JSON = Any
+
 #: The set of HTTP status codes that indicate an automatically
 #: processable redirect.
-REDIRECT_STATI = (
+REDIRECT_STATI: tuple[int, ...] = (
     codes.moved,  # 301
     codes.found,  # 302
     codes.other,  # 303
@@ -78,14 +90,16 @@ REDIRECT_STATI = (
     codes.permanent_redirect,  # 308
 )
 
-DEFAULT_REDIRECT_LIMIT = 30
-CONTENT_CHUNK_SIZE = 10 * 1024
-ITER_CHUNK_SIZE = 512
+DEFAULT_REDIRECT_LIMIT: int = 30
+CONTENT_CHUNK_SIZE: int = 10 * 1024
+ITER_CHUNK_SIZE: int = 512
 
 
 class RequestEncodingMixin:
+    url: str | None
+
     @property
-    def path_url(self):
+    def path_url(self) -> str:
         """Build the path URL to use."""
 
         url = []
@@ -106,7 +120,7 @@ class RequestEncodingMixin:
         return "".join(url)
 
     @staticmethod
-    def _encode_params(data):
+    def _encode_params(data: Any) -> str | bytes:
         """Encode parameters in a piece of data.
 
         Will successfully encode parameters when passed as a dict or a list of
@@ -136,7 +150,7 @@ class RequestEncodingMixin:
             return data
 
     @staticmethod
-    def _encode_files(files, data):
+    def _encode_files(files: Any, data: Any) -> tuple[bytes, str]:
         """Build the body for a multipart/form-data request.
 
         Will successfully encode files when passed as a dict or a list of
@@ -196,7 +210,7 @@ class RequestEncodingMixin:
             else:
                 fdata = fp
 
-            rf = RequestField(name=k, data=fdata, filename=fn, headers=fh)
+            rf = RequestField(name=k, data=fdata, filename=fn, headers=fh)  # type: ignore[arg-type]  # TODO(typing): str|bytes URL handling
             rf.make_multipart(content_type=ft)
             new_fields.append(rf)
 
@@ -206,7 +220,9 @@ class RequestEncodingMixin:
 
 
 class RequestHooksMixin:
-    def register_hook(self, event, hook):
+    hooks: dict[str, list[Callable[..., Any]]]
+
+    def register_hook(self, event: str, hook: Callable[..., Any] | list[Callable[..., Any]]) -> None:
         """Properly register a hook."""
 
         if event not in self.hooks:
@@ -217,7 +233,7 @@ class RequestHooksMixin:
         elif hasattr(hook, "__iter__"):
             self.hooks[event].extend(h for h in hook if isinstance(h, Callable))
 
-    def deregister_hook(self, event, hook):
+    def deregister_hook(self, event: str, hook: Callable[..., Any]) -> bool:
         """Deregister a previously registered hook.
         Returns True if the hook existed, False if not.
         """
@@ -257,19 +273,29 @@ class Request(RequestHooksMixin):
       <PreparedRequest [GET]>
     """
 
+    method: str | None
+    url: str | None
+    headers: CaseInsensitiveDict[str] | Mapping[str, str | bytes] | None
+    files: list[tuple[str, Any]] | dict[str, Any] | None
+    data: Any
+    json: _JSON
+    params: dict[str, Any] | list[tuple[str, str]] | bytes | str | None
+    auth: tuple[str, str] | AuthBase | Callable[[PreparedRequest], PreparedRequest] | None
+    cookies: RequestsCookieJar | CookieJar | dict[str, str] | None
+
     def __init__(
         self,
-        method=None,
-        url=None,
-        headers=None,
-        files=None,
-        data=None,
-        params=None,
-        auth=None,
-        cookies=None,
-        hooks=None,
-        json=None,
-    ):
+        method: str | None = None,
+        url: str | None = None,
+        headers: Mapping[str, str | bytes] | None = None,
+        files: list[tuple[str, Any]] | dict[str, Any] | None = None,
+        data: Any = None,
+        params: dict[str, Any] | list[tuple[str, str]] | bytes | str | None = None,
+        auth: tuple[str, str] | AuthBase | Callable[[PreparedRequest], PreparedRequest] | None = None,
+        cookies: RequestsCookieJar | CookieJar | dict[str, str] | None = None,
+        hooks: dict[str, Callable[..., Any]] | None = None,
+        json: _JSON = None,
+    ) -> None:
         # Default empty dicts for dict params.
         data = [] if data is None else data
         files = [] if files is None else files
@@ -291,10 +317,10 @@ class Request(RequestHooksMixin):
         self.auth = auth
         self.cookies = cookies
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<Request [{self.method}]>"
 
-    def prepare(self):
+    def prepare(self) -> PreparedRequest:
         """Constructs a :class:`PreparedRequest <PreparedRequest>` for transmission and returns it."""
         p = PreparedRequest()
         p.prepare(
@@ -333,7 +359,15 @@ class PreparedRequest(RequestEncodingMixin, RequestHooksMixin):
       <Response [200]>
     """
 
-    def __init__(self):
+    method: str | None
+    url: str | None
+    headers: CaseInsensitiveDict[str]
+    _cookies: RequestsCookieJar | None
+    body: bytes | str | None
+    hooks: dict[str, list[Callable[..., Any]]]
+    _body_position: int | object | None
+
+    def __init__(self) -> None:
         #: HTTP verb to send to the server.
         self.method = None
         #: HTTP URL to send the request to.
@@ -352,17 +386,17 @@ class PreparedRequest(RequestEncodingMixin, RequestHooksMixin):
 
     def prepare(
         self,
-        method=None,
-        url=None,
-        headers=None,
-        files=None,
-        data=None,
-        params=None,
-        auth=None,
-        cookies=None,
-        hooks=None,
-        json=None,
-    ):
+        method: str | None = None,
+        url: str | None = None,
+        headers: Mapping[str, str | bytes] | None = None,
+        files: list[tuple[str, Any]] | dict[str, Any] | None = None,
+        data: Any = None,
+        params: dict[str, Any] | list[tuple[str, str]] | bytes | str | None = None,
+        auth: tuple[str, str] | AuthBase | Callable[[PreparedRequest], PreparedRequest] | None = None,
+        cookies: RequestsCookieJar | CookieJar | dict[str, str] | None = None,
+        hooks: dict[str, Callable[..., Any]] | None = None,
+        json: _JSON = None,
+    ) -> None:
         """Prepares the entire request with the given parameters."""
 
         self.prepare_method(method)
@@ -370,7 +404,7 @@ class PreparedRequest(RequestEncodingMixin, RequestHooksMixin):
         self.prepare_headers(headers)
         self.prepare_cookies(cookies)
         self.prepare_body(data, files, json)
-        self.prepare_auth(auth, url)
+        self.prepare_auth(auth, url or "")
 
         # Note that prepare_auth must be last to enable authentication schemes
         # such as OAuth to work on a fully prepared request.
@@ -378,10 +412,10 @@ class PreparedRequest(RequestEncodingMixin, RequestHooksMixin):
         # This MUST go after prepare_auth. Authenticators could add a hook
         self.prepare_hooks(hooks)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<PreparedRequest [{self.method}]>"
 
-    def copy(self):
+    def copy(self) -> PreparedRequest:
         p = PreparedRequest()
         p.method = self.method
         p.url = self.url
@@ -392,14 +426,14 @@ class PreparedRequest(RequestEncodingMixin, RequestHooksMixin):
         p._body_position = self._body_position
         return p
 
-    def prepare_method(self, method):
+    def prepare_method(self, method: str | None) -> None:
         """Prepares the given HTTP method."""
         self.method = method
         if self.method is not None:
             self.method = to_native_string(self.method.upper())
 
     @staticmethod
-    def _get_idna_encoded_host(host):
+    def _get_idna_encoded_host(host: str) -> str:
         import idna
 
         try:
@@ -408,7 +442,7 @@ class PreparedRequest(RequestEncodingMixin, RequestHooksMixin):
             raise UnicodeError
         return host
 
-    def prepare_url(self, url, params):
+    def prepare_url(self, url: str | None, params: dict[str, Any] | list[tuple[str, str]] | bytes | str | None) -> None:
         """Prepares the given HTTP URL."""
         #: Accept objects that have string representations.
         #: We're unable to blindly call unicode/str functions
@@ -479,21 +513,21 @@ class PreparedRequest(RequestEncodingMixin, RequestHooksMixin):
             else:
                 query = enc_params
 
-        url = requote_uri(urlunparse([scheme, netloc, path, None, query, fragment]))
+        url = requote_uri(urlunparse([scheme, netloc, path, None, query, fragment]))  # type: ignore[arg-type]  # TODO(typing): str|bytes URL handling
         self.url = url
 
-    def prepare_headers(self, headers):
+    def prepare_headers(self, headers: Mapping[str, str | bytes] | None) -> None:
         """Prepares the given HTTP headers."""
 
         self.headers = CaseInsensitiveDict()
         if headers:
             for header in headers.items():
                 # Raise exception on invalid header value.
-                check_header_validity(header)
+                check_header_validity(header)  # type: ignore[arg-type]  # TODO(typing): str|bytes URL handling
                 name, value = header
-                self.headers[to_native_string(name)] = value
+                self.headers[to_native_string(name)] = value  # type: ignore[arg-type]  # TODO(typing): str|bytes URL handling
 
-    def prepare_body(self, data, files, json=None):
+    def prepare_body(self, data: Any, files: list[tuple[str, Any]] | dict[str, Any] | None, json: _JSON = None) -> None:
         """Prepares the given HTTP body data."""
 
         # Check if file, fo, generator, iterator.
@@ -571,7 +605,7 @@ class PreparedRequest(RequestEncodingMixin, RequestHooksMixin):
 
         self.body = body
 
-    def prepare_content_length(self, body):
+    def prepare_content_length(self, body: bytes | str | None) -> None:
         """Prepare Content-Length header based on request method and body"""
         if body is not None:
             length = super_len(body)
@@ -587,12 +621,12 @@ class PreparedRequest(RequestEncodingMixin, RequestHooksMixin):
             # but don't provide one. (i.e. not GET or HEAD)
             self.headers["Content-Length"] = "0"
 
-    def prepare_auth(self, auth, url=""):
+    def prepare_auth(self, auth: tuple[str, str] | AuthBase | Callable[[PreparedRequest], PreparedRequest] | None, url: str = "") -> None:
         """Prepares the given HTTP auth data."""
 
         # If no Auth is explicitly provided, extract it from the URL first.
         if auth is None:
-            url_auth = get_auth_from_url(self.url)
+            url_auth = get_auth_from_url(self.url or "")
             auth = url_auth if any(url_auth) else None
 
         if auth:
@@ -609,7 +643,7 @@ class PreparedRequest(RequestEncodingMixin, RequestHooksMixin):
             # Recompute Content-Length
             self.prepare_content_length(self.body)
 
-    def prepare_cookies(self, cookies):
+    def prepare_cookies(self, cookies: RequestsCookieJar | CookieJar | dict[str, str] | None) -> None:
         """Prepares the given HTTP cookie data.
 
         This function eventually generates a ``Cookie`` header from the
@@ -629,12 +663,12 @@ class PreparedRequest(RequestEncodingMixin, RequestHooksMixin):
         if cookie_header is not None:
             self.headers["Cookie"] = cookie_header
 
-    def prepare_hooks(self, hooks):
+    def prepare_hooks(self, hooks: dict[str, Callable[..., Any]] | None) -> None:
         """Prepares the given hooks."""
         # hooks can be passed as None to the prepare method and to this
         # method. To prevent iterating over None, simply use an empty list
         # if hooks is False-y
-        hooks = hooks or []
+        hooks = hooks or {}
         for event in hooks:
             self.register_hook(event, hooks[event])
 
@@ -644,7 +678,22 @@ class Response:
     server's response to an HTTP request.
     """
 
-    __attrs__ = [
+    _content: bytes | bool
+    _content_consumed: bool
+    _next: PreparedRequest | None
+    status_code: int | None
+    headers: CaseInsensitiveDict[str]
+    raw: Any
+    url: str | None
+    encoding: str | None
+    history: list[Response]
+    reason: str | None
+    cookies: RequestsCookieJar
+    elapsed: datetime.timedelta
+    request: PreparedRequest | None
+    connection: HTTPAdapter | None
+
+    __attrs__: list[str] = [
         "_content",
         "status_code",
         "headers",
@@ -657,7 +706,7 @@ class Response:
         "request",
     ]
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._content = False
         self._content_consumed = False
         self._next = None
@@ -704,13 +753,13 @@ class Response:
         #: is a response.
         self.request = None
 
-    def __enter__(self):
+    def __enter__(self) -> Response:
         return self
 
-    def __exit__(self, *args):
+    def __exit__(self, *args: Any) -> None:
         self.close()
 
-    def __getstate__(self):
+    def __getstate__(self) -> dict[str, Any]:
         # Consume everything; accessing the content attribute makes
         # sure the content has been fully read.
         if not self._content_consumed:
@@ -718,7 +767,7 @@ class Response:
 
         return {attr: getattr(self, attr, None) for attr in self.__attrs__}
 
-    def __setstate__(self, state):
+    def __setstate__(self, state: dict[str, Any]) -> None:
         for name, value in state.items():
             setattr(self, name, value)
 
@@ -726,10 +775,10 @@ class Response:
         setattr(self, "_content_consumed", True)
         setattr(self, "raw", None)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<Response [{self.status_code}]>"
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         """Returns True if :attr:`status_code` is less than 400.
 
         This attribute checks if the status code of the response is between
@@ -739,7 +788,7 @@ class Response:
         """
         return self.ok
 
-    def __nonzero__(self):
+    def __nonzero__(self) -> bool:
         """Returns True if :attr:`status_code` is less than 400.
 
         This attribute checks if the status code of the response is between
@@ -749,12 +798,12 @@ class Response:
         """
         return self.ok
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[bytes]:
         """Allows you to use a response as an iterator."""
         return self.iter_content(128)
 
     @property
-    def ok(self):
+    def ok(self) -> bool:
         """Returns True if :attr:`status_code` is less than 400, False if not.
 
         This attribute checks if the status code of the response is between
@@ -769,14 +818,14 @@ class Response:
         return True
 
     @property
-    def is_redirect(self):
+    def is_redirect(self) -> bool:
         """True if this Response is a well-formed HTTP redirect that could have
         been processed automatically (by :meth:`Session.resolve_redirects`).
         """
         return "location" in self.headers and self.status_code in REDIRECT_STATI
 
     @property
-    def is_permanent_redirect(self):
+    def is_permanent_redirect(self) -> bool:
         """True if this Response one of the permanent versions of redirect."""
         return "location" in self.headers and self.status_code in (
             codes.moved_permanently,
@@ -784,12 +833,12 @@ class Response:
         )
 
     @property
-    def next(self):
+    def next(self) -> PreparedRequest | None:
         """Returns a PreparedRequest for the next request in a redirect chain, if there is one."""
         return self._next
 
     @property
-    def apparent_encoding(self):
+    def apparent_encoding(self) -> str | None:
         """The apparent encoding, provided by the charset_normalizer or chardet libraries."""
         if chardet is not None:
             return chardet.detect(self.content)["encoding"]
@@ -798,7 +847,7 @@ class Response:
             # to a standard Python utf-8 str.
             return "utf-8"
 
-    def iter_content(self, chunk_size=1, decode_unicode=False):
+    def iter_content(self, chunk_size: int = 1, decode_unicode: bool = False) -> Iterator[bytes] | Iterator[str]:
         """Iterates over the response data.  When stream=True is set on the
         request, this avoids reading the content at once into memory for
         large responses.  The chunk size is the number of bytes it should
@@ -872,7 +921,7 @@ class Response:
             chunk_size=chunk_size, decode_unicode=decode_unicode
         ):
             if pending is not None:
-                chunk = pending + chunk
+                chunk = pending + chunk  # type: ignore[operator]  # TODO(typing): str|bytes URL handling
 
             if delimiter:
                 lines = chunk.split(delimiter)
@@ -890,7 +939,7 @@ class Response:
             yield pending
 
     @property
-    def content(self):
+    def content(self) -> bytes | None:
         """Content of the response, in bytes."""
 
         if self._content is False:
@@ -909,7 +958,7 @@ class Response:
         return self._content
 
     @property
-    def text(self):
+    def text(self) -> str:
         """Content of the response, in unicode.
 
         If Response.encoding is None, encoding will be guessed using
@@ -934,7 +983,7 @@ class Response:
 
         # Decode unicode from given encoding.
         try:
-            content = str(self.content, encoding, errors="replace")
+            content = str(self.content, encoding or "utf-8", errors="replace")
         except (LookupError, TypeError):
             # A LookupError is raised if the encoding was not found which could
             # indicate a misspelling or similar mistake.
@@ -946,7 +995,7 @@ class Response:
 
         return content
 
-    def json(self, **kwargs):
+    def json(self, **kwargs: Any) -> Any:
         r"""Decodes the JSON response body (if any) as a Python object.
 
         This may return a dictionary, list, etc. depending on what is in the response.
@@ -982,7 +1031,7 @@ class Response:
             raise RequestsJSONDecodeError(e.msg, e.doc, e.pos)
 
     @property
-    def links(self):
+    def links(self) -> dict[str, dict[str, str]]:
         """Returns the parsed header links of the response, if any."""
 
         header = self.headers.get("link")
@@ -998,8 +1047,11 @@ class Response:
 
         return resolved_links
 
-    def raise_for_status(self):
+    def raise_for_status(self) -> None:
         """Raises :class:`HTTPError`, if one occurred."""
+
+        if self.status_code is None:
+            return
 
         http_error_msg = ""
         if isinstance(self.reason, bytes):
@@ -1027,7 +1079,7 @@ class Response:
         if http_error_msg:
             raise HTTPError(http_error_msg, response=self)
 
-    def close(self):
+    def close(self) -> None:
         """Releases the connection back to the pool. Once this method has been
         called the underlying ``raw`` object must not be accessed again.
 
@@ -1039,3 +1091,4 @@ class Response:
         release_conn = getattr(self.raw, "release_conn", None)
         if release_conn is not None:
             release_conn()
+

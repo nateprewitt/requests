@@ -38,6 +38,8 @@ is at <https://requests.readthedocs.io>.
 :license: Apache 2.0, see LICENSE for more details.
 """
 
+from __future__ import annotations
+
 import warnings
 
 import urllib3
@@ -55,7 +57,7 @@ except ImportError:
     chardet_version = None
 
 
-def check_compatibility(urllib3_version, chardet_version, charset_normalizer_version):
+def check_compatibility(urllib3_version, chardet_version, charset_normalizer_version):  # type: ignore
     urllib3_version = urllib3_version.split(".")
     assert urllib3_version != ["dev"]  # Verify urllib3 isn't installed from git.
 
@@ -90,7 +92,7 @@ def check_compatibility(urllib3_version, chardet_version, charset_normalizer_ver
         )
 
 
-def _check_cryptography(cryptography_version):
+def _check_cryptography(cryptography_version):  # type: ignore
     # cryptography < 1.3.4
     try:
         cryptography_version = list(map(int, cryptography_version.split(".")))
@@ -107,11 +109,11 @@ def _check_cryptography(cryptography_version):
 # Check imported dependencies for compatibility.
 try:
     check_compatibility(
-        urllib3.__version__, chardet_version, charset_normalizer_version
+        urllib3.__version__, chardet_version, charset_normalizer_version  # type: ignore[reportPrivateImportUsage]
     )
 except (AssertionError, ValueError):
     warnings.warn(
-        f"urllib3 ({urllib3.__version__}) or chardet "
+        f"urllib3 ({urllib3.__version__}) or chardet "  # type: ignore[reportPrivateImportUsage]
         f"({chardet_version})/charset_normalizer ({charset_normalizer_version}) "
         "doesn't match a supported version!",
         RequestsDependencyWarning,

@@ -5,6 +5,8 @@ requests.auth
 This module contains the authentication handlers for Requests.
 """
 
+from __future__ import annotations
+
 import hashlib
 import os
 import re
@@ -12,17 +14,21 @@ import threading
 import time
 import warnings
 from base64 import b64encode
+from typing import TYPE_CHECKING, Any
 
 from ._internal_utils import to_native_string
 from .compat import basestring, str, urlparse
 from .cookies import extract_cookies_to_jar
 from .utils import parse_dict_header
 
-CONTENT_TYPE_FORM_URLENCODED = "application/x-www-form-urlencoded"
-CONTENT_TYPE_MULTI_PART = "multipart/form-data"
+if TYPE_CHECKING:
+    from .models import PreparedRequest, Response
+
+CONTENT_TYPE_FORM_URLENCODED: str = "application/x-www-form-urlencoded"
+CONTENT_TYPE_MULTI_PART: str = "multipart/form-data"
 
 
-def _basic_auth_str(username, password):
+def _basic_auth_str(username: bytes | str, password: bytes | str) -> str:
     """Returns a Basic Auth string."""
 
     # "I want us to put a big-ol' comment on top of it that
@@ -69,18 +75,21 @@ def _basic_auth_str(username, password):
 class AuthBase:
     """Base class that all auth implementations derive from"""
 
-    def __call__(self, r):
+    def __call__(self, r: PreparedRequest) -> PreparedRequest:
         raise NotImplementedError("Auth hooks must be callable.")
 
 
 class HTTPBasicAuth(AuthBase):
     """Attaches HTTP Basic Authentication to the given Request object."""
 
-    def __init__(self, username, password):
+    username: bytes | str
+    password: bytes | str
+
+    def __init__(self, username: bytes | str, password: bytes | str) -> None:
         self.username = username
         self.password = password
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
         return all(
             [
                 self.username == getattr(other, "username", None),
@@ -88,10 +97,10 @@ class HTTPBasicAuth(AuthBase):
             ]
         )
 
-    def __ne__(self, other):
+    def __ne__(self, other: object) -> bool:
         return not self == other
 
-    def __call__(self, r):
+    def __call__(self, r: PreparedRequest) -> PreparedRequest:
         r.headers["Authorization"] = _basic_auth_str(self.username, self.password)
         return r
 
@@ -99,7 +108,7 @@ class HTTPBasicAuth(AuthBase):
 class HTTPProxyAuth(HTTPBasicAuth):
     """Attaches HTTP Proxy Authentication to a given Request object."""
 
-    def __call__(self, r):
+    def __call__(self, r: PreparedRequest) -> PreparedRequest:
         r.headers["Proxy-Authorization"] = _basic_auth_str(self.username, self.password)
         return r
 
@@ -107,13 +116,22 @@ class HTTPProxyAuth(HTTPBasicAuth):
 class HTTPDigestAuth(AuthBase):
     """Attaches HTTP Digest Authentication to the given Request object."""
 
-    def __init__(self, username, password):
+    username: bytes | str
+    password: bytes | str
+    _thread_local: threading.local
+    last_nonce: Any
+    nonce_count: Any
+    chal: Any
+    pos: Any
+    num_401_calls: Any
+
+    def __init__(self, username: bytes | str, password: bytes | str) -> None:
         self.username = username
         self.password = password
         # Keep state in per-thread local storage
         self._thread_local = threading.local()
 
-    def init_per_thread_state(self):
+    def init_per_thread_state(self) -> None:
         # Ensure state is initialized just once per-thread
         if not hasattr(self._thread_local, "init"):
             self._thread_local.init = True
@@ -123,7 +141,7 @@ class HTTPDigestAuth(AuthBase):
             self._thread_local.pos = None
             self._thread_local.num_401_calls = None
 
-    def build_digest_header(self, method, url):
+    def build_digest_header(self, method: str, url: str) -> str | None:
         """
         :rtype: str
         """
@@ -233,12 +251,12 @@ class HTTPDigestAuth(AuthBase):
 
         return f"Digest {base}"
 
-    def handle_redirect(self, r, **kwargs):
+    def handle_redirect(self, r: Response, **kwargs: Any) -> None:
         """Reset num_401_calls counter on redirects."""
         if r.is_redirect:
             self._thread_local.num_401_calls = 1
 
-    def handle_401(self, r, **kwargs):
+    def handle_401(self, r: Response, **kwargs: Any) -> Response:
         """
         Takes the given response and tries digest-auth, if needed.
 
@@ -247,7 +265,7 @@ class HTTPDigestAuth(AuthBase):
 
         # If response is not 4xx, do not auth
         # See https://github.com/psf/requests/issues/3772
-        if not 400 <= r.status_code < 500:
+        if r.status_code is None or not 400 <= r.status_code < 500:
             self._thread_local.num_401_calls = 1
             return r
 
@@ -270,9 +288,9 @@ class HTTPDigestAuth(AuthBase):
             extract_cookies_to_jar(prep._cookies, r.request, r.raw)
             prep.prepare_cookies(prep._cookies)
 
-            prep.headers["Authorization"] = self.build_digest_header(
-                prep.method, prep.url
-            )
+            _digest_auth = self.build_digest_header(prep.method or "", prep.url or "")
+            if _digest_auth:
+                prep.headers["Authorization"] = _digest_auth
             _r = r.connection.send(prep, **kwargs)
             _r.history.append(r)
             _r.request = prep
@@ -282,12 +300,14 @@ class HTTPDigestAuth(AuthBase):
         self._thread_local.num_401_calls = 1
         return r
 
-    def __call__(self, r):
+    def __call__(self, r: PreparedRequest) -> PreparedRequest:
         # Initialize per-thread state, if needed
         self.init_per_thread_state()
         # If we have a saved nonce, skip the 401
         if self._thread_local.last_nonce:
-            r.headers["Authorization"] = self.build_digest_header(r.method, r.url)
+            _digest_auth = self.build_digest_header(r.method or "", r.url or "")
+            if _digest_auth:
+                r.headers["Authorization"] = _digest_auth
         try:
             self._thread_local.pos = r.body.tell()
         except AttributeError:
@@ -302,7 +322,7 @@ class HTTPDigestAuth(AuthBase):
 
         return r
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
         return all(
             [
                 self.username == getattr(other, "username", None),
@@ -310,5 +330,6 @@ class HTTPDigestAuth(AuthBase):
             ]
         )
 
-    def __ne__(self, other):
+    def __ne__(self, other: object) -> bool:
         return not self == other
+

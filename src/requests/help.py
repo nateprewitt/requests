@@ -47,11 +47,11 @@ def _implementation():
     if implementation == "CPython":
         implementation_version = platform.python_version()
     elif implementation == "PyPy":
-        pypy = sys.pypy_version_info
+        pypy = sys.pypy_version_info  # type: ignore[attr-defined]
         implementation_version = f"{pypy.major}.{pypy.minor}.{pypy.micro}"
-        if sys.pypy_version_info.releaselevel != "final":
+        if sys.pypy_version_info.releaselevel != "final":  # type: ignore[attr-defined]
             implementation_version = "".join(
-                [implementation_version, sys.pypy_version_info.releaselevel]
+                [implementation_version, sys.pypy_version_info.releaselevel]  # type: ignore[attr-defined]
             )
     elif implementation == "Jython":
         implementation_version = platform.python_version()  # Complete Guess
@@ -77,7 +77,7 @@ def info():
         }
 
     implementation_info = _implementation()
-    urllib3_info = {"version": urllib3.__version__}
+    urllib3_info = {"version": urllib3.__version__}  # type: ignore[reportPrivateImportUsage]
     charset_normalizer_info = {"version": None}
     chardet_info = {"version": None}
     if charset_normalizer:

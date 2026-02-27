@@ -6,6 +6,8 @@ This module provides utility functions that are used within Requests
 that are also useful for external consumption.
 """
 
+from __future__ import annotations
+
 import codecs
 import contextlib
 import io
@@ -40,7 +42,7 @@ from .compat import (
     integer_types,
     is_urllib3_1,
     proxy_bypass,
-    proxy_bypass_environment,
+    proxy_bypass_environment,  # type: ignore[attr-defined]  # https://github.com/python/cpython/issues/145331
     quote,
     str,
     unquote,
@@ -57,14 +59,26 @@ from .exceptions import (
 )
 from .structures import CaseInsensitiveDict
 
-NETRC_FILES = (".netrc", "_netrc")
+from typing import TYPE_CHECKING, Any, AnyStr, Generator, Iterable, overload
 
-DEFAULT_CA_BUNDLE_PATH = certs.where()
+if TYPE_CHECKING:
+    from collections.abc import Mapping as MappingABC
+    from contextlib import _GeneratorContextManager
+    from http.cookiejar import CookieJar
+    from io import BufferedWriter
 
-DEFAULT_PORTS = {"http": 80, "https": 443}
+    from .models import PreparedRequest, Request
+
+_Uri = str | bytes
+
+NETRC_FILES: tuple[str, str] = (".netrc", "_netrc")
+
+DEFAULT_CA_BUNDLE_PATH: str = certs.where()
+
+DEFAULT_PORTS: dict[str, int] = {"http": 80, "https": 443}
 
 # Ensure that ', ' is used to preserve previous delimiter behavior.
-DEFAULT_ACCEPT_ENCODING = ", ".join(
+DEFAULT_ACCEPT_ENCODING: str = ", ".join(
     re.split(r",\s*", make_headers(accept_encoding=True)["accept-encoding"])
 )
 
@@ -72,7 +86,7 @@ DEFAULT_ACCEPT_ENCODING = ", ".join(
 if sys.platform == "win32":
     # provide a proxy_bypass version on Windows without DNS lookups
 
-    def proxy_bypass_registry(host):
+    def proxy_bypass_registry(host: str) -> bool:
         try:
             import winreg
         except ImportError:
@@ -110,7 +124,7 @@ if sys.platform == "win32":
                 return True
         return False
 
-    def proxy_bypass(host):  # noqa
+    def proxy_bypass(host: str) -> bool:  # noqa
         """Return True, if the host should be bypassed.
 
         Checks proxy settings gathered from the environment, if specified,
@@ -122,7 +136,7 @@ if sys.platform == "win32":
             return proxy_bypass_registry(host)
 
 
-def dict_to_sequence(d):
+def dict_to_sequence(d: Any) -> Any:
     """Returns an internal sequence dictionary update."""
 
     if hasattr(d, "items"):
@@ -131,7 +145,7 @@ def dict_to_sequence(d):
     return d
 
 
-def super_len(o):
+def super_len(o: Any) -> int:
     total_length = None
     current_position = 0
 
@@ -202,7 +216,7 @@ def super_len(o):
     return max(0, total_length - current_position)
 
 
-def get_netrc_auth(url, raise_errors=False):
+def get_netrc_auth(url: _Uri, raise_errors: bool = False) -> tuple[str, str] | None:
     """Returns the Requests tuple auth for a given url from netrc."""
 
     netrc_file = os.environ.get("NETRC")
@@ -230,7 +244,7 @@ def get_netrc_auth(url, raise_errors=False):
         host = ri.hostname
 
         try:
-            _netrc = netrc(netrc_path).authenticators(host)
+            _netrc = netrc(netrc_path).authenticators(host)  # type: ignore[arg-type]  # TODO(typing): str|bytes URL handling
             if _netrc and any(_netrc):
                 # Return with login / password
                 login_i = 0 if _netrc[0] else 1
@@ -246,14 +260,14 @@ def get_netrc_auth(url, raise_errors=False):
         pass
 
 
-def guess_filename(obj):
+def guess_filename(obj: Any) -> str | None:
     """Tries to guess the filename of the given object."""
     name = getattr(obj, "name", None)
     if name and isinstance(name, basestring) and name[0] != "<" and name[-1] != ">":
-        return os.path.basename(name)
+        return os.path.basename(name)  # type: ignore[return-value]  # TODO(typing): str|bytes URL handling
 
 
-def extract_zipped_paths(path):
+def extract_zipped_paths(path: str) -> str:
     """Replace nonexistent paths that look like they refer to a member of a zip
     archive with the location of an extracted copy of the target, or else
     just return the provided path unchanged.
@@ -291,7 +305,7 @@ def extract_zipped_paths(path):
 
 
 @contextlib.contextmanager
-def atomic_open(filename):
+def atomic_open(filename: str) -> _GeneratorContextManager[BufferedWriter]:
     """Write a file to the disk in an atomic fashion"""
     tmp_descriptor, tmp_name = tempfile.mkstemp(dir=os.path.dirname(filename))
     try:
@@ -303,7 +317,7 @@ def atomic_open(filename):
         raise
 
 
-def from_key_val_list(value):
+def from_key_val_list(value: Any) -> dict[Any, Any] | None:
     """Take an object and test to see if it can be represented as a
     dictionary. Unless it can not be represented as such, return an
     OrderedDict, e.g.,
@@ -330,7 +344,11 @@ def from_key_val_list(value):
     return OrderedDict(value)
 
 
-def to_key_val_list(value):
+@overload
+def to_key_val_list(value: None) -> None: ...
+@overload
+def to_key_val_list(value: Mapping[Any, Any] | Iterable[tuple[Any, Any]]) -> list[tuple[Any, Any]]: ...
+def to_key_val_list(value: Any) -> list[tuple[Any, Any]] | None:
     """Take an object and test to see if it can be represented as a
     dictionary. If it can be, return a list of tuples, e.g.,
 
@@ -360,7 +378,7 @@ def to_key_val_list(value):
 
 
 # From mitsuhiko/werkzeug (used with permission).
-def parse_list_header(value):
+def parse_list_header(value: str) -> list[str]:
     """Parse lists as described by RFC 2068 Section 2.
 
     In particular, parse comma-separated lists where the elements of
@@ -392,7 +410,7 @@ def parse_list_header(value):
 
 
 # From mitsuhiko/werkzeug (used with permission).
-def parse_dict_header(value):
+def parse_dict_header(value: str) -> dict[str, str | None]:
     """Parse lists of key, value pairs as described by RFC 2068 Section 2 and
     convert them into a python dict:
 
@@ -427,7 +445,7 @@ def parse_dict_header(value):
 
 
 # From mitsuhiko/werkzeug (used with permission).
-def unquote_header_value(value, is_filename=False):
+def unquote_header_value(value: str, is_filename: bool = False) -> str:
     r"""Unquotes a header value.  (Reversal of :func:`quote_header_value`).
     This does not use the real unquoting but what browsers are actually
     using for quoting.
@@ -452,7 +470,7 @@ def unquote_header_value(value, is_filename=False):
     return value
 
 
-def dict_from_cookiejar(cj):
+def dict_from_cookiejar(cj: CookieJar) -> dict[str, str | None]:
     """Returns a key/value dictionary from a CookieJar.
 
     :param cj: CookieJar object to extract cookies from.
@@ -463,7 +481,7 @@ def dict_from_cookiejar(cj):
     return cookie_dict
 
 
-def add_dict_to_cookiejar(cj, cookie_dict):
+def add_dict_to_cookiejar(cj: CookieJar, cookie_dict: dict[str, str]) -> CookieJar:
     """Returns a CookieJar from a key/value dictionary.
 
     :param cj: CookieJar to insert cookies into.
@@ -474,7 +492,7 @@ def add_dict_to_cookiejar(cj, cookie_dict):
     return cookiejar_from_dict(cookie_dict, cj)
 
 
-def get_encodings_from_content(content):
+def get_encodings_from_content(content: str) -> list[str]:
     """Returns encodings from given content string.
 
     :param content: bytestring to extract encodings from.
@@ -499,7 +517,7 @@ def get_encodings_from_content(content):
     )
 
 
-def _parse_content_type_header(header):
+def _parse_content_type_header(header: str) -> tuple[str, dict[str, Any]]:
     """Returns content type and parameters from given header
 
     :param header: string
@@ -524,7 +542,7 @@ def _parse_content_type_header(header):
     return content_type, params_dict
 
 
-def get_encoding_from_headers(headers):
+def get_encoding_from_headers(headers: MappingABC[str, str]) -> str | None:
     """Returns encodings from given HTTP Header Dict.
 
     :param headers: dictionary to extract encoding from.
@@ -549,7 +567,7 @@ def get_encoding_from_headers(headers):
         return "utf-8"
 
 
-def stream_decode_response_unicode(iterator, r):
+def stream_decode_response_unicode(iterator: Iterable[bytes], r: Any) -> Generator[str, None, None]:
     """Stream decodes an iterator."""
 
     if r.encoding is None:
@@ -566,7 +584,7 @@ def stream_decode_response_unicode(iterator, r):
         yield rv
 
 
-def iter_slices(string, slice_length):
+def iter_slices(string: str, slice_length: int | None) -> Generator[str, None, None]:
     """Iterate over slices of a string."""
     pos = 0
     if slice_length is None or slice_length <= 0:
@@ -576,7 +594,7 @@ def iter_slices(string, slice_length):
         pos += slice_length
 
 
-def get_unicode_from_response(r):
+def get_unicode_from_response(r: Any) -> str:
     """Returns the requested content back in unicode.
 
     :param r: Response object to get unicode content from.
@@ -610,18 +628,18 @@ def get_unicode_from_response(r):
 
     # Fall back:
     try:
-        return str(r.content, encoding, errors="replace")
+        return str(r.content, encoding or "utf-8", errors="replace")
     except TypeError:
         return r.content
 
 
 # The unreserved URI characters (RFC 3986)
-UNRESERVED_SET = frozenset(
+UNRESERVED_SET: frozenset[str] = frozenset(
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz" + "0123456789-._~"
 )
 
 
-def unquote_unreserved(uri):
+def unquote_unreserved(uri: str) -> str:
     """Un-escape any percent-escape sequences in a URI that are unreserved
     characters. This leaves all reserved, illegal and non-ASCII bytes encoded.
 
@@ -645,7 +663,7 @@ def unquote_unreserved(uri):
     return "".join(parts)
 
 
-def requote_uri(uri):
+def requote_uri(uri: str) -> str:
     """Re-quote the given URI.
 
     This function passes the given URI through an unquote/quote cycle to
@@ -667,7 +685,7 @@ def requote_uri(uri):
         return quote(uri, safe=safe_without_percent)
 
 
-def address_in_network(ip, net):
+def address_in_network(ip: str, net: str) -> bool:
     """This function allows you to check if an IP belongs to a network subnet
 
     Example: returns True if ip = 192.168.1.1 and net = 192.168.1.0/24
@@ -682,7 +700,7 @@ def address_in_network(ip, net):
     return (ipaddr & netmask) == (network & netmask)
 
 
-def dotted_netmask(mask):
+def dotted_netmask(mask: int) -> str:
     """Converts mask from /xx format to xxx.xxx.xxx.xxx
 
     Example: if mask is 24 function returns 255.255.255.0
@@ -693,7 +711,7 @@ def dotted_netmask(mask):
     return socket.inet_ntoa(struct.pack(">I", bits))
 
 
-def is_ipv4_address(string_ip):
+def is_ipv4_address(string_ip: str) -> bool:
     """
     :rtype: bool
     """
@@ -704,7 +722,7 @@ def is_ipv4_address(string_ip):
     return True
 
 
-def is_valid_cidr(string_network):
+def is_valid_cidr(string_network: str) -> bool:
     """
     Very simple check of the cidr format in no_proxy variable.
 
@@ -729,7 +747,7 @@ def is_valid_cidr(string_network):
 
 
 @contextlib.contextmanager
-def set_environ(env_name, value):
+def set_environ(env_name: str, value: str | None) -> _GeneratorContextManager[None]:
     """Set the environment variable 'env_name' to 'value'
 
     Save previous value, yield, and then restore the previous value stored in
@@ -750,7 +768,7 @@ def set_environ(env_name, value):
                 os.environ[env_name] = old_value
 
 
-def should_bypass_proxies(url, no_proxy):
+def should_bypass_proxies(url: _Uri, no_proxy: Iterable[str] | None) -> bool:
     """
     Returns whether we should bypass proxies or not.
 
@@ -778,10 +796,10 @@ def should_bypass_proxies(url, no_proxy):
         # the end of the hostname, both with and without the port.
         no_proxy = (host for host in no_proxy.replace(" ", "").split(",") if host)
 
-        if is_ipv4_address(parsed.hostname):
+        if is_ipv4_address(parsed.hostname):  # type: ignore[arg-type]  # TODO(typing): str|bytes URL handling
             for proxy_ip in no_proxy:
                 if is_valid_cidr(proxy_ip):
-                    if address_in_network(parsed.hostname, proxy_ip):
+                    if address_in_network(parsed.hostname, proxy_ip):  # type: ignore[arg-type]  # TODO(typing): str|bytes URL handling
                         return True
                 elif parsed.hostname == proxy_ip:
                     # If no_proxy ip was defined in plain IP notation instead of cidr notation &
@@ -790,7 +808,7 @@ def should_bypass_proxies(url, no_proxy):
         else:
             host_with_port = parsed.hostname
             if parsed.port:
-                host_with_port += f":{parsed.port}"
+                host_with_port += f":{parsed.port}"  # type: ignore[operator]  # TODO(typing): str|bytes URL handling
 
             for host in no_proxy:
                 if parsed.hostname.endswith(host) or host_with_port.endswith(host):
@@ -801,7 +819,7 @@ def should_bypass_proxies(url, no_proxy):
     with set_environ("no_proxy", no_proxy_arg):
         # parsed.hostname can be `None` in cases such as a file URI.
         try:
-            bypass = proxy_bypass(parsed.hostname)
+            bypass = proxy_bypass(parsed.hostname)  # type: ignore[arg-type]  # TODO(typing): str|bytes URL handling
         except (TypeError, socket.gaierror):
             bypass = False
 
@@ -811,7 +829,7 @@ def should_bypass_proxies(url, no_proxy):
     return False
 
 
-def get_environ_proxies(url, no_proxy=None):
+def get_environ_proxies(url: _Uri, no_proxy: Iterable[str] | None = None) -> dict[str, str]:
     """
     Return a dict of environment proxies.
 
@@ -823,7 +841,7 @@ def get_environ_proxies(url, no_proxy=None):
         return getproxies()
 
 
-def select_proxy(url, proxies):
+def select_proxy(url: _Uri, proxies: MappingABC[str, str] | None) -> str | None:
     """Select a proxy for the url, if applicable.
 
     :param url: The url being for the request
@@ -832,12 +850,12 @@ def select_proxy(url, proxies):
     proxies = proxies or {}
     urlparts = urlparse(url)
     if urlparts.hostname is None:
-        return proxies.get(urlparts.scheme, proxies.get("all"))
+        return proxies.get(urlparts.scheme, proxies.get("all"))  # type: ignore[arg-type]  # TODO(typing): str|bytes URL handling
 
     proxy_keys = [
-        urlparts.scheme + "://" + urlparts.hostname,
+        urlparts.scheme + "://" + urlparts.hostname,  # type: ignore[operator]  # TODO(typing): str|bytes URL handling
         urlparts.scheme,
-        "all://" + urlparts.hostname,
+        "all://" + urlparts.hostname,  # type: ignore[operator]  # TODO(typing): str|bytes URL handling
         "all",
     ]
     proxy = None
@@ -849,7 +867,7 @@ def select_proxy(url, proxies):
     return proxy
 
 
-def resolve_proxies(request, proxies, trust_env=True):
+def resolve_proxies(request: Request | PreparedRequest, proxies: dict[str, str] | None, trust_env: bool = True) -> dict[str, str]:
     """This method takes proxy information from a request and configuration
     input to resolve a mapping of target proxies. This will consider settings
     such as NO_PROXY to strip proxy configurations.
@@ -869,14 +887,14 @@ def resolve_proxies(request, proxies, trust_env=True):
     if trust_env and not should_bypass_proxies(url, no_proxy=no_proxy):
         environ_proxies = get_environ_proxies(url, no_proxy=no_proxy)
 
-        proxy = environ_proxies.get(scheme, environ_proxies.get("all"))
+        proxy = environ_proxies.get(scheme, environ_proxies.get("all"))  # type: ignore[arg-type]  # TODO(typing): str|bytes URL handling
 
         if proxy:
-            new_proxies.setdefault(scheme, proxy)
+            new_proxies.setdefault(scheme, proxy)  # type: ignore[arg-type]  # TODO(typing): str|bytes URL handling
     return new_proxies
 
 
-def default_user_agent(name="python-requests"):
+def default_user_agent(name: str = "python-requests") -> str:
     """
     Return a string representing the default user agent.
 
@@ -885,7 +903,7 @@ def default_user_agent(name="python-requests"):
     return f"{name}/{__version__}"
 
 
-def default_headers():
+def default_headers() -> CaseInsensitiveDict[str]:
     """
     :rtype: requests.structures.CaseInsensitiveDict
     """
@@ -899,7 +917,7 @@ def default_headers():
     )
 
 
-def parse_header_links(value):
+def parse_header_links(value: str) -> list[dict[str, str]]:
     """Return a list of parsed link headers proxies.
 
     i.e. Link: <http:/.../front.jpeg>; rel=front; type="image/jpeg",<http://.../back.jpeg>; rel=back;type="image/jpeg"
@@ -942,7 +960,7 @@ _null2 = _null * 2
 _null3 = _null * 3
 
 
-def guess_json_utf(data):
+def guess_json_utf(data: bytes) -> str | None:
     """
     :rtype: str
     """
@@ -974,7 +992,7 @@ def guess_json_utf(data):
     return None
 
 
-def prepend_scheme_if_needed(url, new_scheme):
+def prepend_scheme_if_needed(url: str, new_scheme: str) -> str:
     """Given a URL that may or may not have a scheme, prepend the given scheme.
     Does not replace a present scheme with the one provided as an argument.
 
@@ -1003,7 +1021,7 @@ def prepend_scheme_if_needed(url, new_scheme):
     return urlunparse((scheme, netloc, path, "", query, fragment))
 
 
-def get_auth_from_url(url):
+def get_auth_from_url(url: _Uri) -> tuple[str, str]:
     """Given a url with authentication components, extract them into a tuple of
     username,password.
 
@@ -1012,14 +1030,14 @@ def get_auth_from_url(url):
     parsed = urlparse(url)
 
     try:
-        auth = (unquote(parsed.username), unquote(parsed.password))
+        auth = (unquote(parsed.username), unquote(parsed.password))  # type: ignore[arg-type]  # TODO(typing): str|bytes URL handling
     except (AttributeError, TypeError):
         auth = ("", "")
 
     return auth
 
 
-def check_header_validity(header):
+def check_header_validity(header: tuple[AnyStr, AnyStr]) -> None:
     """Verifies that header parts don't contain leading whitespace
     reserved characters, or return characters.
 
@@ -1030,7 +1048,7 @@ def check_header_validity(header):
     _validate_header_part(header, value, 1)
 
 
-def _validate_header_part(header, header_part, header_validator_index):
+def _validate_header_part(header: tuple[AnyStr, AnyStr], header_part: AnyStr, header_validator_index: int) -> None:
     if isinstance(header_part, str):
         validator = _HEADER_VALIDATORS_STR[header_validator_index]
     elif isinstance(header_part, bytes):
@@ -1049,7 +1067,7 @@ def _validate_header_part(header, header_part, header_validator_index):
         )
 
 
-def urldefragauth(url):
+def urldefragauth(url: _Uri) -> str:
     """
     Given a url remove the fragment and the authentication part.
 
@@ -1063,10 +1081,10 @@ def urldefragauth(url):
 
     netloc = netloc.rsplit("@", 1)[-1]
 
-    return urlunparse((scheme, netloc, path, params, query, ""))
+    return urlunparse((scheme, netloc, path, params, query, ""))  # type: ignore[arg-type]  # TODO(typing): str|bytes URL handling
 
 
-def rewind_body(prepared_request):
+def rewind_body(prepared_request: PreparedRequest) -> None:
     """Move file pointer back to its recorded starting position
     so it can be read again on redirect.
     """
@@ -1082,3 +1100,4 @@ def rewind_body(prepared_request):
             )
     else:
         raise UnrewindableBodyError("Unable to rewind request body for redirect.")
+
