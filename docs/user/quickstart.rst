@@ -271,12 +271,8 @@ use the same key::
       },
       ...
     }
-
-    # Note: httpbin.org adds a changing header ("X-Amzn-Trace-Id") to each response,
-    # so r1.text == r2.text may be False even if the form data matches.
-    # Instead, compare the form data in the JSON response:
-    >>> r1.text == r2.text
-    False
+    # httpbin.org may embed non-deterministic metadata,
+    # so we only compare our submitted data here.
     >>> r1.json()['form'] == r2.json()['form']
     True
 
