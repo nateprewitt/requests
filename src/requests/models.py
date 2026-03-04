@@ -8,7 +8,7 @@ This module contains the primary objects that power Requests.
 from __future__ import annotations
 
 import datetime
-from typing import TYPE_CHECKING, Any, Iterator, Callable, Mapping
+from typing import TYPE_CHECKING, Any, Iterable, Iterator, Callable, Mapping
 
 # Import encoding now, to avoid implicit import later.
 # Implicit import within threads may cause LookupError when standard library is in a ZIP,
@@ -77,6 +77,7 @@ if TYPE_CHECKING:
     from .adapters import HTTPAdapter
     from .auth import AuthBase
     from .cookies import RequestsCookieJar
+    from .hooks import _Hook, _HooksInput
 
 _JSON = Any
 
@@ -220,9 +221,9 @@ class RequestEncodingMixin:
 
 
 class RequestHooksMixin:
-    hooks: dict[str, list[Callable[..., Any]]]
+    hooks: dict[str, list[_Hook]]
 
-    def register_hook(self, event: str, hook: Callable[..., Any] | list[Callable[..., Any]]) -> None:
+    def register_hook(self, event: str, hook: Iterable[_Hook] | _Hook) -> None:
         """Properly register a hook."""
 
         if event not in self.hooks:
@@ -293,7 +294,7 @@ class Request(RequestHooksMixin):
         params: dict[str, Any] | list[tuple[str, str]] | bytes | str | None = None,
         auth: tuple[str, str] | AuthBase | Callable[[PreparedRequest], PreparedRequest] | None = None,
         cookies: RequestsCookieJar | CookieJar | dict[str, str] | None = None,
-        hooks: dict[str, Callable[..., Any]] | None = None,
+        hooks: _HooksInput | None = None,
         json: _JSON = None,
     ) -> None:
         # Default empty dicts for dict params.
@@ -362,9 +363,9 @@ class PreparedRequest(RequestEncodingMixin, RequestHooksMixin):
     method: str | None
     url: str | None
     headers: CaseInsensitiveDict[str]
-    _cookies: RequestsCookieJar | None
+    _cookies: RequestsCookieJar | CookieJar | None
     body: bytes | str | None
-    hooks: dict[str, list[Callable[..., Any]]]
+    hooks: dict[str, list[_Hook]]
     _body_position: int | object | None
 
     def __init__(self) -> None:
@@ -373,7 +374,8 @@ class PreparedRequest(RequestEncodingMixin, RequestHooksMixin):
         #: HTTP URL to send the request to.
         self.url = None
         #: dictionary of HTTP headers.
-        self.headers = None
+        # TODO: Revisit pattern of None-init for attributes that are always set before use
+        self.headers = None  # type: ignore[assignment]
         # The `CookieJar` used to create the Cookie header will be stored here
         # after prepare_cookies is called
         self._cookies = None
@@ -394,7 +396,7 @@ class PreparedRequest(RequestEncodingMixin, RequestHooksMixin):
         params: dict[str, Any] | list[tuple[str, str]] | bytes | str | None = None,
         auth: tuple[str, str] | AuthBase | Callable[[PreparedRequest], PreparedRequest] | None = None,
         cookies: RequestsCookieJar | CookieJar | dict[str, str] | None = None,
-        hooks: dict[str, Callable[..., Any]] | None = None,
+        hooks: _HooksInput | None = None,
         json: _JSON = None,
     ) -> None:
         """Prepares the entire request with the given parameters."""
@@ -659,11 +661,12 @@ class PreparedRequest(RequestEncodingMixin, RequestHooksMixin):
         else:
             self._cookies = cookiejar_from_dict(cookies)
 
+        assert self._cookies is not None
         cookie_header = get_cookie_header(self._cookies, self)
         if cookie_header is not None:
             self.headers["Cookie"] = cookie_header
 
-    def prepare_hooks(self, hooks: dict[str, Callable[..., Any]] | None) -> None:
+    def prepare_hooks(self, hooks: _HooksInput | None) -> None:
         """Prepares the given hooks."""
         # hooks can be passed as None to the prepare method and to this
         # method. To prevent iterating over None, simply use an empty list
@@ -678,7 +681,7 @@ class Response:
     server's response to an HTTP request.
     """
 
-    _content: bytes | bool
+    _content: bytes | bool | None
     _content_consumed: bool
     _next: PreparedRequest | None
     status_code: int | None

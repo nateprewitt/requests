@@ -61,6 +61,7 @@ if TYPE_CHECKING:
 
     from .adapters import BaseAdapter
     from .auth import AuthBase
+    from .hooks import _Hook
     from .models import Response
 
 _Data = Any
@@ -68,7 +69,7 @@ _Params = MutableMapping[str, Any] | str | bytes | list[tuple[str, str]] | None
 _Timeout = float | tuple[float | None, float | None] | None
 _Verify = bool | str
 _Cert = str | tuple[str, str] | None
-_Hooks = dict[str, Callable[..., Any]] | None
+_Hooks = dict[str, list[_Hook]] | None
 _Files = Any
 _Auth = tuple[str, str] | AuthBase | Callable[[PreparedRequest], PreparedRequest] | None
 
@@ -194,7 +195,7 @@ class SessionRedirectMixin:
         proxies: MutableMapping[str, str] | None = None,
         yield_requests: bool = False,
         **adapter_kwargs: Any,
-    ) -> Generator[Response | PreparedRequest, None, None]:
+    ) -> Generator[Response, None, None]:
         """Receives a Response. Returns a generator of Responses or Requests."""
 
         hist = []  # keep track of history
@@ -264,6 +265,7 @@ class SessionRedirectMixin:
             # Extract any cookies sent on the response to the cookiejar
             # in the new request. Because we've mutated our copied prepared
             # request, use the old one that we haven't yet touched.
+            assert prepared_request._cookies is not None
             extract_cookies_to_jar(prepared_request._cookies, req, resp.raw)
             merge_cookies(prepared_request._cookies, self.cookies)
             prepared_request.prepare_cookies(prepared_request._cookies)
@@ -287,7 +289,7 @@ class SessionRedirectMixin:
             req = prepared_request
 
             if yield_requests:
-                yield req
+                yield req  # type: ignore[misc]  # Internal use only, returns PreparedRequest
             else:
                 resp = self.send(
                     req,
@@ -352,7 +354,7 @@ class SessionRedirectMixin:
 
         # urllib3 handles proxy authorization for us in the standard adapter.
         # Avoid appending this to TLS tunneled requests where it may be leaked.
-        if not scheme.startswith("https") and username and password:
+        if not scheme.startswith("https") and username and password:  # type: ignore[arg-type]  # TODO(typing): str|bytes URL handling
             headers["Proxy-Authorization"] = _basic_auth_str(username, password)
 
         return new_proxies
@@ -773,12 +775,14 @@ class Session(SessionRedirectMixin):
             history.insert(0, r)
             # Get the last request made
             r = history.pop()
+            assert isinstance(r, Response)
             r.history = history
 
         # If redirects aren't being followed, store the response on the Request for Response.next().
         if not allow_redirects:
+            assert isinstance(r, Response)
             try:
-                r._next = next(
+                r._next = next(  # type: ignore[assignment]  # yield_requests=True returns PreparedRequest
                     self.resolve_redirects(r, request, yield_requests=True, **kwargs)
                 )
             except StopIteration:

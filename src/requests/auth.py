@@ -191,10 +191,10 @@ class HTTPDigestAuth(AuthBase):
 
             hash_utf8 = sha512_utf8
 
-        KD = lambda s, d: hash_utf8(f"{s}:{d}")  # noqa:E731
-
         if hash_utf8 is None:
             return None
+
+        KD = lambda s, d: hash_utf8(f"{s}:{d}")  # noqa:E731
 
         # XXX not implemented yet
         entdig = None
@@ -269,10 +269,13 @@ class HTTPDigestAuth(AuthBase):
             self._thread_local.num_401_calls = 1
             return r
 
+        assert r.request is not None
+
         if self._thread_local.pos is not None:
             # Rewind the file position indicator of the body to where
             # it was to resend the request.
-            r.request.body.seek(self._thread_local.pos)
+            if (seek := getattr(r.request.body, "seek", None)) is not None:
+                seek(self._thread_local.pos)
         s_auth = r.headers.get("www-authenticate", "")
 
         if "digest" in s_auth.lower() and self._thread_local.num_401_calls < 2:
@@ -285,12 +288,14 @@ class HTTPDigestAuth(AuthBase):
             r.content
             r.close()
             prep = r.request.copy()
+            assert prep._cookies is not None
             extract_cookies_to_jar(prep._cookies, r.request, r.raw)
             prep.prepare_cookies(prep._cookies)
 
             _digest_auth = self.build_digest_header(prep.method or "", prep.url or "")
             if _digest_auth:
                 prep.headers["Authorization"] = _digest_auth
+            assert r.connection is not None
             _r = r.connection.send(prep, **kwargs)
             _r.history.append(r)
             _r.request = prep
@@ -308,13 +313,9 @@ class HTTPDigestAuth(AuthBase):
             _digest_auth = self.build_digest_header(r.method or "", r.url or "")
             if _digest_auth:
                 r.headers["Authorization"] = _digest_auth
-        try:
-            self._thread_local.pos = r.body.tell()
-        except AttributeError:
-            # In the case of HTTPDigestAuth being reused and the body of
-            # the previous request was a file-like object, pos has the
-            # file position of the previous body. Ensure it's set to
-            # None.
+        if (tell := getattr(r.body, "tell", None)) is not None:
+            self._thread_local.pos = tell()
+        else:
             self._thread_local.pos = None
         r.register_hook("response", self.handle_401)
         r.register_hook("response", self.handle_redirect)

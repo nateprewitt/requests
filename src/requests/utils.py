@@ -59,7 +59,7 @@ from .exceptions import (
 )
 from .structures import CaseInsensitiveDict
 
-from typing import TYPE_CHECKING, Any, AnyStr, Generator, Iterable, overload
+from typing import TYPE_CHECKING, Any, AnyStr, Generator, Iterable, Iterator, overload
 
 if TYPE_CHECKING:
     from collections.abc import Mapping as MappingABC
@@ -305,7 +305,7 @@ def extract_zipped_paths(path: str) -> str:
 
 
 @contextlib.contextmanager
-def atomic_open(filename: str) -> _GeneratorContextManager[BufferedWriter]:
+def atomic_open(filename: str) -> Iterator[BufferedWriter]:
     """Write a file to the disk in an atomic fashion"""
     tmp_descriptor, tmp_name = tempfile.mkstemp(dir=os.path.dirname(filename))
     try:
@@ -747,7 +747,7 @@ def is_valid_cidr(string_network: str) -> bool:
 
 
 @contextlib.contextmanager
-def set_environ(env_name: str, value: str | None) -> _GeneratorContextManager[None]:
+def set_environ(env_name: str, value: str | None) -> Iterator[None]:
     """Set the environment variable 'env_name' to 'value'
 
     Save previous value, yield, and then restore the previous value stored in
@@ -755,6 +755,7 @@ def set_environ(env_name: str, value: str | None) -> _GeneratorContextManager[No
 
     If 'value' is None, do nothing"""
     value_changed = value is not None
+    old_value: str | None = None
     if value_changed:
         old_value = os.environ.get(env_name)
         os.environ[env_name] = value
@@ -811,7 +812,7 @@ def should_bypass_proxies(url: _Uri, no_proxy: Iterable[str] | None) -> bool:
                 host_with_port += f":{parsed.port}"  # type: ignore[operator]  # TODO(typing): str|bytes URL handling
 
             for host in no_proxy:
-                if parsed.hostname.endswith(host) or host_with_port.endswith(host):
+                if parsed.hostname.endswith(host) or host_with_port.endswith(host):  # type: ignore[arg-type]  # TODO(typing): str|bytes URL handling
                     # The URL does match something in no_proxy, so we don't want
                     # to apply the proxies on this URL.
                     return True
@@ -1079,7 +1080,7 @@ def urldefragauth(url: _Uri) -> str:
     if not netloc:
         netloc, path = path, netloc
 
-    netloc = netloc.rsplit("@", 1)[-1]
+    netloc = netloc.rsplit("@", 1)[-1]  # type: ignore[arg-type]  # TODO(typing): str|bytes URL handling
 
     return urlunparse((scheme, netloc, path, params, query, ""))  # type: ignore[arg-type]  # TODO(typing): str|bytes URL handling
 

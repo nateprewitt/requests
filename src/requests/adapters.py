@@ -661,16 +661,16 @@ class HTTPAdapter(BaseAdapter):
         if isinstance(timeout, tuple):
             try:
                 connect, read = timeout
-                timeout = TimeoutSauce(connect=connect, read=read)
+                resolved_timeout = TimeoutSauce(connect=connect, read=read)
             except ValueError:
                 raise ValueError(
                     f"Invalid timeout {timeout}. Pass a (connect, read) timeout tuple, "
                     f"or a single float to set both timeouts to the same value."
                 )
         elif isinstance(timeout, TimeoutSauce):
-            pass
+            resolved_timeout = timeout
         else:
-            timeout = TimeoutSauce(connect=timeout, read=timeout)
+            resolved_timeout = TimeoutSauce(connect=timeout, read=timeout)
 
         try:
             resp = conn.urlopen(
@@ -683,7 +683,7 @@ class HTTPAdapter(BaseAdapter):
                 preload_content=False,
                 decode_content=False,
                 retries=self.max_retries,
-                timeout=timeout,
+                timeout=resolved_timeout,
                 chunked=chunked,
             )
 

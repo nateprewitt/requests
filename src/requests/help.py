@@ -28,7 +28,7 @@ except ImportError:
     cryptography = None
 else:
     import cryptography
-    import OpenSSL
+    import OpenSSL  # type: ignore[import-not-found]
 
 
 def _implementation():

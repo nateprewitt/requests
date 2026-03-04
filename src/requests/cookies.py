@@ -14,7 +14,7 @@ import copy
 import time
 from collections.abc import Iterator, MutableMapping
 from http.cookiejar import Cookie, CookieJar, CookiePolicy
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, TypeVar, overload
 
 from ._internal_utils import to_native_string
 from .compat import Morsel, cookielib, urlparse, urlunparse
@@ -59,7 +59,7 @@ class MockRequest:
         # Only return the response's URL if the user hadn't set the Host
         # header
         if not self._r.headers.get("Host"):
-            return self._r.url
+            return self._r.url or ""
         # If they did set it, retrieve it and reconstruct the expected domain
         host = to_native_string(self._r.headers["Host"], encoding="utf-8")
         parsed = urlparse(self._r.url)
@@ -145,7 +145,7 @@ def extract_cookies_to_jar(
     req = MockRequest(request)
     # pull out the HTTPMessage with the headers and put it in the mock:
     res = MockResponse(response._original_response.msg)
-    jar.extract_cookies(res, req)
+    jar.extract_cookies(res, req)  # type: ignore[arg-type]
 
 
 def get_cookie_header(jar: CookieJar, request: PreparedRequest) -> str | None:
@@ -155,7 +155,7 @@ def get_cookie_header(jar: CookieJar, request: PreparedRequest) -> str | None:
     :rtype: str
     """
     r = MockRequest(request)
-    jar.add_cookie_header(r)
+    jar.add_cookie_header(r)  # type: ignore[arg-type]
     return r.get_new_headers().get("Cookie")
 
 
@@ -186,7 +186,7 @@ class CookieConflictError(RuntimeError):
     """
 
 
-class RequestsCookieJar(CookieJar, MutableMapping[str, str]):  # type: ignore[misc]
+class RequestsCookieJar(CookieJar, MutableMapping[str, str | None]):  # type: ignore[misc]
     """Compatibility class; is a http.cookiejar.CookieJar, but exposes a dict
     interface.
 
@@ -204,13 +204,15 @@ class RequestsCookieJar(CookieJar, MutableMapping[str, str]):  # type: ignore[mi
     .. warning:: dictionary operations that are normally O(1) may be O(n).
     """
 
-    def get(
+    _policy: CookiePolicy
+
+    def get(  # type: ignore[override]
         self,
         name: str,
         default: str | None = None,
         domain: str | None = None,
         path: str | None = None,
-    ) -> str | None:  # type: ignore[override]
+    ) -> str | None:
         """Dict-like get() that also supports optional domain and path args in
         order to resolve naming collisions from using one cookie jar over
         multiple domains.
@@ -223,7 +225,7 @@ class RequestsCookieJar(CookieJar, MutableMapping[str, str]):  # type: ignore[mi
             return default
 
     def set(
-        self, name: str, value: str | Morsel[dict[str, str]], **kwargs: Any
+        self, name: str, value: str | Morsel[dict[str, str]] | None, **kwargs: Any
     ) -> Cookie | None:
         """Dict-like set() that also supports optional domain and path args in
         order to resolve naming collisions from using one cookie jar over
@@ -267,7 +269,7 @@ class RequestsCookieJar(CookieJar, MutableMapping[str, str]):  # type: ignore[mi
         .. seealso:: iterkeys() and iteritems().
         """
         for cookie in iter(self):
-            yield cookie.value
+            yield cookie.value or ""
 
     def values(self) -> list[str]:  # type: ignore[override]
         """Dict-like values() that returns a list of values of cookies from the
@@ -284,7 +286,7 @@ class RequestsCookieJar(CookieJar, MutableMapping[str, str]):  # type: ignore[mi
         .. seealso:: iterkeys() and itervalues().
         """
         for cookie in iter(self):
-            yield cookie.name, cookie.value
+            yield cookie.name, cookie.value or ""
 
     def items(self) -> list[tuple[str, str]]:  # type: ignore[override]
         """Dict-like items() that returns a list of name-value tuples from the
@@ -347,7 +349,7 @@ class RequestsCookieJar(CookieJar, MutableMapping[str, str]):  # type: ignore[mi
         except CookieConflictError:
             return True
 
-    def __getitem__(self, name: str) -> str:
+    def __getitem__(self, name: str) -> str | None:
         """Dict-like __getitem__() for compatibility with client code. Throws
         exception if there are more than one cookie with name. In that case,
         use the more explicit get() method instead.
@@ -356,7 +358,7 @@ class RequestsCookieJar(CookieJar, MutableMapping[str, str]):  # type: ignore[mi
         """
         return self._find_no_duplicates(name)
 
-    def __setitem__(self, name: str, value: str | Morsel[dict[str, str]]) -> None:
+    def __setitem__(self, name: str, value: str | Morsel[dict[str, str]] | None) -> None:
         """Dict-like __setitem__ for compatibility with client code. Throws
         exception if there is already a cookie of that name in the jar. In that
         case, use the more explicit set() method instead.
@@ -371,11 +373,11 @@ class RequestsCookieJar(CookieJar, MutableMapping[str, str]):  # type: ignore[mi
 
     def set_cookie(self, cookie: Cookie, *args: Any, **kwargs: Any) -> None:
         if (
-            hasattr(cookie.value, "startswith")
-            and cookie.value.startswith('"')
-            and cookie.value.endswith('"')
+            (value := cookie.value) is not None
+            and value.startswith('"')
+            and value.endswith('"')
         ):
-            cookie.value = cookie.value.replace('\\"', "")
+            cookie.value = value.replace('\\"', "")
         return super().set_cookie(cookie, *args, **kwargs)
 
     def update(  # type: ignore[override]
@@ -390,7 +392,7 @@ class RequestsCookieJar(CookieJar, MutableMapping[str, str]):  # type: ignore[mi
 
     def _find(
         self, name: str, domain: str | None = None, path: str | None = None
-    ) -> str:
+    ) -> str | None:
         """Requests uses this method internally to get cookie values.
 
         If there are conflicting cookies, _find arbitrarily chooses one.
@@ -412,7 +414,7 @@ class RequestsCookieJar(CookieJar, MutableMapping[str, str]):  # type: ignore[mi
 
     def _find_no_duplicates(
         self, name: str, domain: str | None = None, path: str | None = None
-    ) -> str:
+    ) -> str | None:
         """Both ``__get_item__`` and ``get`` call this function: it's never
         used elsewhere in Requests.
 
@@ -437,7 +439,7 @@ class RequestsCookieJar(CookieJar, MutableMapping[str, str]):  # type: ignore[mi
                         # we will eventually return this as long as no cookie conflict
                         toReturn = cookie.value
 
-        if toReturn:
+        if toReturn is not None:
             return toReturn
         raise KeyError(f"name={name!r}, domain={domain!r}, path={path!r}")
 
@@ -470,9 +472,9 @@ def _copy_cookie_jar(jar: CookieJar | None) -> CookieJar | None:
     if jar is None:
         return None
 
-    if hasattr(jar, "copy"):
+    if copy_method := getattr(jar, "copy", None):
         # We're dealing with an instance of RequestsCookieJar
-        return jar.copy()
+        return copy_method()
     # We're dealing with a generic CookieJar instance
     new_jar = copy.copy(jar)
     new_jar.clear()
@@ -547,11 +549,30 @@ def morsel_to_cookie(morsel: Morsel[Any]) -> Cookie:
     )
 
 
+_CookieJarT = TypeVar("_CookieJarT", bound=CookieJar)
+
+
+@overload
 def cookiejar_from_dict(
     cookie_dict: dict[str, str] | None,
-    cookiejar: RequestsCookieJar | None = None,
+    cookiejar: None = None,
     overwrite: bool = True,
-) -> RequestsCookieJar:
+) -> RequestsCookieJar: ...
+
+
+@overload
+def cookiejar_from_dict(
+    cookie_dict: dict[str, str] | None,
+    cookiejar: _CookieJarT,
+    overwrite: bool = True,
+) -> _CookieJarT: ...
+
+
+def cookiejar_from_dict(
+    cookie_dict: dict[str, str] | None,
+    cookiejar: CookieJar | None = None,
+    overwrite: bool = True,
+) -> CookieJar:
     """Returns a CookieJar from a key/value dictionary.
 
     :param cookie_dict: Dict of key/values to insert into CookieJar.
@@ -587,9 +608,9 @@ def merge_cookies(
     if isinstance(cookies, dict):
         cookiejar = cookiejar_from_dict(cookies, cookiejar=cookiejar, overwrite=False)
     elif isinstance(cookies, cookielib.CookieJar):
-        try:
-            cookiejar.update(cookies)
-        except AttributeError:
+        if update_method := getattr(cookiejar, "update", None):
+            update_method(cookies)
+        else:
             for cookie_in_jar in cookies:
                 cookiejar.set_cookie(cookie_in_jar)
 
