@@ -61,7 +61,7 @@ from .utils import (
 )
 
 try:
-    from urllib3.contrib.socks import SOCKSProxyManager
+    from urllib3.contrib.socks import SOCKSProxyManager  # type: ignore[assignment]
 except ImportError:
 
     def SOCKSProxyManager(*args, **kwargs):
@@ -673,7 +673,7 @@ class HTTPAdapter(BaseAdapter):
             resolved_timeout = TimeoutSauce(connect=timeout, read=timeout)
 
         try:
-            resp = conn.urlopen(
+            resp = conn.urlopen(  # type: ignore[union-attr]
                 method=request.method,
                 url=url,
                 body=request.body,

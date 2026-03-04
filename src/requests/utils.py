@@ -62,7 +62,7 @@ from .structures import CaseInsensitiveDict
 from typing import TYPE_CHECKING, Any, AnyStr, Generator, Iterable, Iterator, overload
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping as MappingABC
+    from collections.abc import Mapping as MappingABC, MutableMapping
     from contextlib import _GeneratorContextManager
     from http.cookiejar import CookieJar
     from io import BufferedWriter
@@ -248,7 +248,7 @@ def get_netrc_auth(url: _Uri, raise_errors: bool = False) -> tuple[str, str] | N
             if _netrc and any(_netrc):
                 # Return with login / password
                 login_i = 0 if _netrc[0] else 1
-                return (_netrc[login_i], _netrc[2])
+                return (_netrc[login_i] or "", _netrc[2] or "")
         except (NetrcParseError, OSError):
             # If there was a parsing error or a permissions issue reading the file,
             # we'll just skip netrc auth unless explicitly asked to raise errors.
@@ -567,7 +567,7 @@ def get_encoding_from_headers(headers: MappingABC[str, str]) -> str | None:
         return "utf-8"
 
 
-def stream_decode_response_unicode(iterator: Iterable[bytes], r: Any) -> Generator[str, None, None]:
+def stream_decode_response_unicode(iterator: Iterable[bytes], r: Any) -> Generator[str | bytes, None, None]:
     """Stream decodes an iterator."""
 
     if r.encoding is None:
@@ -584,7 +584,11 @@ def stream_decode_response_unicode(iterator: Iterable[bytes], r: Any) -> Generat
         yield rv
 
 
-def iter_slices(string: str, slice_length: int | None) -> Generator[str, None, None]:
+@overload
+def iter_slices(string: bytes, slice_length: int | None) -> Generator[bytes, None, None]: ...
+@overload
+def iter_slices(string: str, slice_length: int | None) -> Generator[str, None, None]: ...
+def iter_slices(string: bytes | str, slice_length: int | None) -> Generator[bytes | str, None, None]:
     """Iterate over slices of a string."""
     pos = 0
     if slice_length is None or slice_length <= 0:
@@ -769,7 +773,7 @@ def set_environ(env_name: str, value: str | None) -> Iterator[None]:
                 os.environ[env_name] = old_value
 
 
-def should_bypass_proxies(url: _Uri, no_proxy: Iterable[str] | None) -> bool:
+def should_bypass_proxies(url: _Uri, no_proxy: str | None) -> bool:
     """
     Returns whether we should bypass proxies or not.
 
@@ -795,10 +799,10 @@ def should_bypass_proxies(url: _Uri, no_proxy: Iterable[str] | None) -> bool:
     if no_proxy:
         # We need to check whether we match here. We need to see if we match
         # the end of the hostname, both with and without the port.
-        no_proxy = (host for host in no_proxy.replace(" ", "").split(",") if host)
+        no_proxy_hosts = (host for host in no_proxy.replace(" ", "").split(",") if host)
 
         if is_ipv4_address(parsed.hostname):  # type: ignore[arg-type]  # TODO(typing): str|bytes URL handling
-            for proxy_ip in no_proxy:
+            for proxy_ip in no_proxy_hosts:
                 if is_valid_cidr(proxy_ip):
                     if address_in_network(parsed.hostname, proxy_ip):  # type: ignore[arg-type]  # TODO(typing): str|bytes URL handling
                         return True
@@ -811,7 +815,7 @@ def should_bypass_proxies(url: _Uri, no_proxy: Iterable[str] | None) -> bool:
             if parsed.port:
                 host_with_port += f":{parsed.port}"  # type: ignore[operator]  # TODO(typing): str|bytes URL handling
 
-            for host in no_proxy:
+            for host in no_proxy_hosts:
                 if parsed.hostname.endswith(host) or host_with_port.endswith(host):  # type: ignore[arg-type]  # TODO(typing): str|bytes URL handling
                     # The URL does match something in no_proxy, so we don't want
                     # to apply the proxies on this URL.
@@ -830,7 +834,7 @@ def should_bypass_proxies(url: _Uri, no_proxy: Iterable[str] | None) -> bool:
     return False
 
 
-def get_environ_proxies(url: _Uri, no_proxy: Iterable[str] | None = None) -> dict[str, str]:
+def get_environ_proxies(url: _Uri, no_proxy: str | None = None) -> dict[str, str]:
     """
     Return a dict of environment proxies.
 
@@ -868,7 +872,7 @@ def select_proxy(url: _Uri, proxies: MappingABC[str, str] | None) -> str | None:
     return proxy
 
 
-def resolve_proxies(request: Request | PreparedRequest, proxies: dict[str, str] | None, trust_env: bool = True) -> dict[str, str]:
+def resolve_proxies(request: Request | PreparedRequest, proxies: MutableMapping[str, str] | None, trust_env: bool = True) -> dict[str, str]:
     """This method takes proxy information from a request and configuration
     input to resolve a mapping of target proxies. This will consider settings
     such as NO_PROXY to strip proxy configurations.
@@ -879,11 +883,12 @@ def resolve_proxies(request: Request | PreparedRequest, proxies: dict[str, str] 
 
     :rtype: dict
     """
+    assert request.url is not None, "resolve_proxies requires a request with a URL"
     proxies = proxies if proxies is not None else {}
     url = request.url
     scheme = urlparse(url).scheme
     no_proxy = proxies.get("no_proxy")
-    new_proxies = proxies.copy()
+    new_proxies = dict(proxies)
 
     if trust_env and not should_bypass_proxies(url, no_proxy=no_proxy):
         environ_proxies = get_environ_proxies(url, no_proxy=no_proxy)
@@ -1013,6 +1018,7 @@ def prepend_scheme_if_needed(url: str, new_scheme: str) -> str:
     if auth:
         # parse_url doesn't provide the netloc with auth
         # so we'll add it ourselves.
+        assert netloc is not None
         netloc = "@".join([auth, netloc])
     if scheme is None:
         scheme = new_scheme
@@ -1060,7 +1066,7 @@ def _validate_header_part(header: tuple[AnyStr, AnyStr], header_part: AnyStr, he
             f"must be of type str or bytes, not {type(header_part)}"
         )
 
-    if not validator.match(header_part):
+    if not validator.match(header_part):  # type: ignore[arg-type]
         header_kind = "name" if header_validator_index == 0 else "value"
         raise InvalidHeader(
             f"Invalid leading whitespace, reserved character(s), or return "

@@ -8,7 +8,7 @@ This module contains the primary objects that power Requests.
 from __future__ import annotations
 
 import datetime
-from typing import TYPE_CHECKING, Any, Iterable, Iterator, Callable, Mapping
+from typing import TYPE_CHECKING, Any, Iterable, Iterator, Callable, Literal, Mapping, overload
 
 # Import encoding now, to avoid implicit import later.
 # Implicit import within threads may cause LookupError when standard library is in a ZIP,
@@ -83,7 +83,7 @@ _JSON = Any
 
 #: The set of HTTP status codes that indicate an automatically
 #: processable redirect.
-REDIRECT_STATI: tuple[int, ...] = (
+REDIRECT_STATI: tuple[int, ...] = (  # type: ignore[assignment]
     codes.moved,  # 301
     codes.found,  # 302
     codes.other,  # 303
@@ -421,7 +421,7 @@ class PreparedRequest(RequestEncodingMixin, RequestHooksMixin):
         p = PreparedRequest()
         p.method = self.method
         p.url = self.url
-        p.headers = self.headers.copy() if self.headers is not None else None
+        p.headers = self.headers.copy() if self.headers is not None else CaseInsensitiveDict()
         p._cookies = _copy_cookie_jar(self._cookies)
         p.body = self.body
         p.hooks = self.hooks
@@ -634,10 +634,13 @@ class PreparedRequest(RequestEncodingMixin, RequestHooksMixin):
         if auth:
             if isinstance(auth, tuple) and len(auth) == 2:
                 # special-case basic HTTP auth
-                auth = HTTPBasicAuth(*auth)
+                auth_handler = HTTPBasicAuth(*auth)
+            else:
+                assert callable(auth)
+                auth_handler = auth
 
             # Allow auth to make its changes.
-            r = auth(self)
+            r = auth_handler(self)
 
             # Update self to reflect the auth changes.
             self.__dict__.update(r.__dict__)
@@ -681,7 +684,7 @@ class Response:
     server's response to an HTTP request.
     """
 
-    _content: bytes | bool | None
+    _content: bytes | Literal[False] | None
     _content_consumed: bool
     _next: PreparedRequest | None
     status_code: int | None
@@ -850,7 +853,11 @@ class Response:
             # to a standard Python utf-8 str.
             return "utf-8"
 
-    def iter_content(self, chunk_size: int = 1, decode_unicode: bool = False) -> Iterator[bytes] | Iterator[str]:
+    @overload
+    def iter_content(self, chunk_size: int = 1, decode_unicode: Literal[False] = False) -> Iterator[bytes]: ...
+    @overload
+    def iter_content(self, chunk_size: int = 1, *, decode_unicode: Literal[True]) -> Iterator[str | bytes]: ...
+    def iter_content(self, chunk_size: int = 1, decode_unicode: bool = False) -> Iterator[str | bytes]:
         """Iterates over the response data.  When stream=True is set on the
         request, this avoids reading the content at once into memory for
         large responses.  The chunk size is the number of bytes it should
@@ -897,6 +904,7 @@ class Response:
                 f"chunk_size must be an int, it is instead a {type(chunk_size)}."
             )
         # simulate reading small chunks of the content
+        assert isinstance(self._content, bytes)
         reused_chunks = iter_slices(self._content, chunk_size)
 
         stream_chunks = generate()

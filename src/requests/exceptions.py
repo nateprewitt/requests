@@ -31,7 +31,7 @@ class RequestException(IOError):
         self.response = response
         self.request = kwargs.pop("request", None)
         if response is not None and not self.request and hasattr(response, "request"):
-            self.request = self.response.request
+            self.request = response.request
         super().__init__(*args, **kwargs)
 
 
@@ -52,7 +52,7 @@ class JSONDecodeError(InvalidJSONError, CompatJSONDecodeError):
         CompatJSONDecodeError.__init__(self, *args)
         InvalidJSONError.__init__(self, *self.args, **kwargs)
 
-    def __reduce__(self) -> tuple[Any, ...]:
+    def __reduce__(self) -> tuple[Any, ...] | str:
         """
         The __reduce__ method called when pickling the object must
         be the one from the JSONDecodeError (be it json/simplejson)

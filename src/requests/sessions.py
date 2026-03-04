@@ -315,6 +315,7 @@ class SessionRedirectMixin:
         """
         headers = prepared_request.headers
         url = prepared_request.url
+        assert response.request is not None
 
         if "Authorization" in headers and self.should_strip_auth(
             response.request.url or "", url or ""
@@ -526,7 +527,7 @@ class Session(SessionRedirectMixin):
 
         p = PreparedRequest()
         p.prepare(
-            method=request.method.upper(),
+            method=(request.method or "").upper(),
             url=request.url,
             files=request.files,
             data=request.data,
@@ -757,7 +758,8 @@ class Session(SessionRedirectMixin):
         if r.history:
             # If the hooks create history then we want those cookies too
             for resp in r.history:
-                extract_cookies_to_jar(self.cookies, resp.request, resp.raw)
+                if resp.request is not None:
+                    extract_cookies_to_jar(self.cookies, resp.request, resp.raw)
 
         extract_cookies_to_jar(self.cookies, request, r.raw)
 
@@ -804,8 +806,9 @@ class Session(SessionRedirectMixin):
             # Set environment's proxies.
             no_proxy = proxies.get("no_proxy") if proxies is not None else None
             env_proxies = get_environ_proxies(url, no_proxy=no_proxy)
-            for k, v in env_proxies.items():
-                proxies.setdefault(k, v)
+            if proxies is not None:
+                for k, v in env_proxies.items():
+                    proxies.setdefault(k, v)
 
             # Look for requests environment configuration
             # and be compatible with cURL.
