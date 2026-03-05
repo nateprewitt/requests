@@ -12,7 +12,7 @@ Available hooks:
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from typing import TYPE_CHECKING, Any
 
 from ._types import HooksInputType, HookType
@@ -40,9 +40,9 @@ def dispatch_hook(
     hooks_dict = hooks or {}
     hook_list: Iterable[HookType] | HookType | None = hooks_dict.get(key)
     if hook_list:
-        if hasattr(hook_list, "__call__"):
-            hook_list = [hook_list]  # type: ignore[list-item]
-        for hook in hook_list:  # type: ignore[union-attr]
+        if isinstance(hook_list, Callable):
+            hook_list = [hook_list]
+        for hook in hook_list:
             _hook_data = hook(hook_data, **kwargs)
             if _hook_data is not None:
                 hook_data = _hook_data

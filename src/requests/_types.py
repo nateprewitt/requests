@@ -57,6 +57,14 @@ if TYPE_CHECKING:
         | None
     )
 
+    BodyType: TypeAlias = (
+        bytes
+        | str
+        | Iterable[bytes | str]
+        | SupportsRead[bytes | str]
+        | None
+    )
+
     HeadersType: TypeAlias = CaseInsensitiveDict[str] | Mapping[str, str | bytes]
     HeadersUpdateType: TypeAlias = Mapping[str, str | bytes | None]
 

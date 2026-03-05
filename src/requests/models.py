@@ -78,7 +78,15 @@ from .utils import (
 if TYPE_CHECKING:
     from http.cookiejar import CookieJar
 
-    from ._types import AuthType, FilesType, HooksInputType, HookType, JsonType
+    from ._types import (
+        AuthType,
+        BodyType,
+        DataType,
+        FilesType,
+        HooksInputType,
+        HookType,
+        JsonType,
+    )
     from .adapters import HTTPAdapter
     from .cookies import RequestsCookieJar
 
@@ -235,7 +243,7 @@ class RequestHooksMixin:
         elif hasattr(hook, "__iter__"):
             self.hooks[event].extend(h for h in hook if isinstance(h, Callable))
 
-    def deregister_hook(self, event: str, hook: Callable[..., Any]) -> bool:
+    def deregister_hook(self, event: str, hook: HookType) -> bool:
         """Deregister a previously registered hook.
         Returns True if the hook existed, False if not.
         """
@@ -279,7 +287,7 @@ class Request(RequestHooksMixin):
     url: str | None
     headers: CaseInsensitiveDict[str] | Mapping[str, str | bytes] | None
     files: FilesType
-    data: Any
+    data: DataType
     json: JsonType
     params: dict[str, Any] | list[tuple[str, str]] | bytes | str | None
     auth: AuthType
@@ -291,7 +299,7 @@ class Request(RequestHooksMixin):
         url: str | None = None,
         headers: Mapping[str, str | bytes] | None = None,
         files: FilesType = None,
-        data: Any = None,
+        data: DataType = None,
         params: dict[str, Any] | list[tuple[str, str]] | bytes | str | None = None,
         auth: AuthType = None,
         cookies: RequestsCookieJar | CookieJar | dict[str, str] | None = None,
@@ -365,7 +373,7 @@ class PreparedRequest(RequestEncodingMixin, RequestHooksMixin):
     url: str | None
     headers: CaseInsensitiveDict[str]
     _cookies: RequestsCookieJar | CookieJar | None
-    body: bytes | str | None
+    body: BodyType
     hooks: dict[str, list[HookType]]
     _body_position: int | object | None
 
@@ -393,7 +401,7 @@ class PreparedRequest(RequestEncodingMixin, RequestHooksMixin):
         url: str | None = None,
         headers: Mapping[str, str | bytes] | None = None,
         files: FilesType = None,
-        data: Any = None,
+        data: DataType = None,
         params: dict[str, Any] | list[tuple[str, str]] | bytes | str | None = None,
         auth: AuthType = None,
         cookies: RequestsCookieJar | CookieJar | dict[str, str] | None = None,
@@ -534,7 +542,7 @@ class PreparedRequest(RequestEncodingMixin, RequestHooksMixin):
                 name, value = header
                 self.headers[to_native_string(name)] = value  # type: ignore[arg-type]  # TODO(typing): str|bytes URL handling
 
-    def prepare_body(self, data: Any, files: FilesType, json: JsonType = None) -> None:
+    def prepare_body(self, data: DataType, files: FilesType, json: JsonType = None) -> None:
         """Prepares the given HTTP body data."""
 
         # Check if file, fo, generator, iterator.
@@ -577,7 +585,7 @@ class PreparedRequest(RequestEncodingMixin, RequestHooksMixin):
                 # This will allow us to rewind a file in the event
                 # of a redirect.
                 try:
-                    self._body_position = body.tell()
+                    self._body_position = body.tell()  # type: ignore[union-attr]  # guarded by getattr check
                 except OSError:
                     # This differentiates from None, allowing us to catch
                     # a failed `tell()` later when trying to rewind the body
@@ -610,9 +618,9 @@ class PreparedRequest(RequestEncodingMixin, RequestHooksMixin):
             if content_type and ("content-type" not in self.headers):
                 self.headers["Content-Type"] = content_type
 
-        self.body = body
+        self.body = body  # type: ignore[assignment]  # body transforms from DataType to BodyType
 
-    def prepare_content_length(self, body: bytes | str | None) -> None:
+    def prepare_content_length(self, body: BodyType) -> None:
         """Prepare Content-Length header based on request method and body"""
         if body is not None:
             length = super_len(body)
