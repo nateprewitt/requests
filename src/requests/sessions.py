@@ -16,17 +16,6 @@ from datetime import timedelta
 from typing import TYPE_CHECKING, Any, Generator, Iterable, Mapping, MutableMapping
 
 from ._internal_utils import to_native_string
-from ._types import (
-    AuthType,
-    CertType,
-    DataType,
-    FilesType,
-    HookType,
-    HooksType,
-    ParamsType,
-    TimeoutType,
-    VerifyType,
-)
 from .adapters import HTTPAdapter
 from .auth import _basic_auth_str
 from .compat import Mapping as MappingCompat, cookielib, urljoin, urlparse
@@ -50,6 +39,7 @@ from .models import (  # noqa: F401
     REDIRECT_STATI,
     PreparedRequest,
     Request,
+    Response,
 )
 from .status_codes import codes
 from .structures import CaseInsensitiveDict
@@ -71,7 +61,17 @@ if TYPE_CHECKING:
 
     from .adapters import BaseAdapter
     from .auth import AuthBase
-    from .models import Response
+    from ._types import (
+        AuthType,
+        CertType,
+        DataType,
+        FilesType,
+        HookType,
+        HooksType,
+        ParamsType,
+        TimeoutType,
+        VerifyType,
+    )
 
 # Preferred clock, based on which one is more accurate on a given system.
 if sys.platform == "win32":

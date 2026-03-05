@@ -73,8 +73,7 @@ if typing.TYPE_CHECKING:
     from urllib3.connectionpool import ConnectionPool
 
     from .models import PreparedRequest
-
-from ._types import CertType, TimeoutType, VerifyType
+    from ._types import CertType, TimeoutType, VerifyType
 
 
 DEFAULT_POOLBLOCK = False

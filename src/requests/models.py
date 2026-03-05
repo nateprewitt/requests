@@ -421,7 +421,7 @@ class PreparedRequest(RequestEncodingMixin, RequestHooksMixin):
         p = PreparedRequest()
         p.method = self.method
         p.url = self.url
-        p.headers = self.headers.copy() if self.headers is not None else CaseInsensitiveDict()
+        p.headers = self.headers.copy() if self.headers is not None else None  # type: ignore[assignment]
         p._cookies = _copy_cookie_jar(self._cookies)
         p.body = self.body
         p.hooks = self.hooks
@@ -903,13 +903,13 @@ class Response:
             raise TypeError(
                 f"chunk_size must be an int, it is instead a {type(chunk_size)}."
             )
-        # simulate reading small chunks of the content
-        assert isinstance(self._content, bytes)
-        reused_chunks = iter_slices(self._content, chunk_size)
 
-        stream_chunks = generate()
-
-        chunks = reused_chunks if self._content_consumed else stream_chunks
+        if self._content_consumed:
+            # simulate reading small chunks of the content
+            assert isinstance(self._content, bytes)
+            chunks = iter_slices(self._content, chunk_size)
+        else:
+            chunks = generate()
 
         if decode_unicode:
             chunks = stream_decode_response_unicode(chunks, self)

@@ -10,11 +10,13 @@ This module implements the Requests API.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from . import sessions
-from ._types import DataType, ParamsType
 from .models import Response
+
+if TYPE_CHECKING:
+    from ._types import DataType, ParamsType
 
 
 def request(method: str, url: str, **kwargs: Any) -> Response:
