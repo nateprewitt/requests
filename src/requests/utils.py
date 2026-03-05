@@ -68,9 +68,7 @@ if TYPE_CHECKING:
     from io import BufferedWriter
 
     from .models import PreparedRequest, Request, Response
-    from ._types import SupportsItems
-
-from ._types import UriType
+    from ._types import SupportsItems, UriType
 
 NETRC_FILES: tuple[str, str] = (".netrc", "_netrc")
 
