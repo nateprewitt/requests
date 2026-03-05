@@ -542,7 +542,9 @@ class PreparedRequest(RequestEncodingMixin, RequestHooksMixin):
                 name, value = header
                 self.headers[to_native_string(name)] = value  # type: ignore[arg-type]  # TODO(typing): str|bytes URL handling
 
-    def prepare_body(self, data: DataType, files: FilesType, json: JsonType = None) -> None:
+    def prepare_body(
+        self, data: DataType, files: FilesType, json: JsonType = None
+    ) -> None:
         """Prepares the given HTTP body data."""
 
         # Check if file, fo, generator, iterator.
