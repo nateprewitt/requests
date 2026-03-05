@@ -74,9 +74,7 @@ if typing.TYPE_CHECKING:
 
     from .models import PreparedRequest
 
-_Verify = bool | str
-_Cert = str | tuple[str, str] | None
-_Timeout = float | tuple[float | None, float | None] | None
+from ._types import CertType, TimeoutType, VerifyType
 
 
 DEFAULT_POOLBLOCK = False
@@ -132,9 +130,9 @@ class BaseAdapter:
         self,
         request: PreparedRequest,
         stream: bool = False,
-        timeout: _Timeout = None,
-        verify: _Verify = True,
-        cert: _Cert = None,
+        timeout: TimeoutType = None,
+        verify: VerifyType = True,
+        cert: CertType = None,
         proxies: MutableMapping[str, str] | None = None,
     ) -> Response:
         """Sends PreparedRequest object. Returns Response object.
@@ -303,7 +301,7 @@ class HTTPAdapter(BaseAdapter):
 
         return manager
 
-    def cert_verify(self, conn: Any, url: str, verify: _Verify, cert: _Cert) -> None:
+    def cert_verify(self, conn: Any, url: str, verify: VerifyType, cert: CertType) -> None:
         """Verify a SSL certificate. This method should not be called from user
         code, and is only exposed for use when subclassing the
         :class:`HTTPAdapter <requests.adapters.HTTPAdapter>`.
@@ -396,7 +394,7 @@ class HTTPAdapter(BaseAdapter):
 
         return response
 
-    def build_connection_pool_key_attributes(self, request: PreparedRequest, verify: _Verify, cert: _Cert = None) -> tuple[dict[str, Any], dict[str, Any]]:
+    def build_connection_pool_key_attributes(self, request: PreparedRequest, verify: VerifyType, cert: CertType = None) -> tuple[dict[str, Any], dict[str, Any]]:
         """Build the PoolKey attributes used by urllib3 to return a connection.
 
         This looks at the PreparedRequest, the user-specified verify value,
@@ -446,7 +444,7 @@ class HTTPAdapter(BaseAdapter):
         """
         return _urllib3_request_context(request, verify, cert, self.poolmanager)
 
-    def get_connection_with_tls_context(self, request: PreparedRequest, verify: _Verify, proxies: MutableMapping[str, str] | None = None, cert: _Cert = None) -> ConnectionPool:
+    def get_connection_with_tls_context(self, request: PreparedRequest, verify: VerifyType, proxies: MutableMapping[str, str] | None = None, cert: CertType = None) -> ConnectionPool:
         """Returns a urllib3 connection for the given request and TLS settings.
         This should not be called from user code, and is only exposed for use
         when subclassing the :class:`HTTPAdapter <requests.adapters.HTTPAdapter>`.
@@ -617,9 +615,9 @@ class HTTPAdapter(BaseAdapter):
         self,
         request: PreparedRequest,
         stream: bool = False,
-        timeout: _Timeout = None,
-        verify: _Verify = True,
-        cert: _Cert = None,
+        timeout: TimeoutType = None,
+        verify: VerifyType = True,
+        cert: CertType = None,
         proxies: MutableMapping[str, str] | None = None,
     ) -> Response:
         """Sends PreparedRequest object. Returns Response object.

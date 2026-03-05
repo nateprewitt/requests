@@ -10,13 +10,11 @@ This module implements the Requests API.
 
 from __future__ import annotations
 
-from typing import Any, MutableMapping
+from typing import Any
 
 from . import sessions
+from ._types import DataType, ParamsType
 from .models import Response
-
-_Data = Any
-_Params = MutableMapping[str, Any] | str | bytes | list[tuple[str, str]] | None
 
 
 def request(method: str, url: str, **kwargs: Any) -> Response:
@@ -67,7 +65,7 @@ def request(method: str, url: str, **kwargs: Any) -> Response:
         return session.request(method=method, url=url, **kwargs)
 
 
-def get(url: str, params: _Params = None, **kwargs: Any) -> Response:
+def get(url: str, params: ParamsType = None, **kwargs: Any) -> Response:
     r"""Sends a GET request.
 
     :param url: URL for the new :class:`Request` object.
@@ -108,7 +106,7 @@ def head(url: str, **kwargs: Any) -> Response:
     return request("head", url, **kwargs)
 
 
-def post(url: str, data: _Data = None, json: Any = None, **kwargs: Any) -> Response:
+def post(url: str, data: DataType = None, json: Any = None, **kwargs: Any) -> Response:
     r"""Sends a POST request.
 
     :param url: URL for the new :class:`Request` object.
@@ -123,7 +121,7 @@ def post(url: str, data: _Data = None, json: Any = None, **kwargs: Any) -> Respo
     return request("post", url, data=data, json=json, **kwargs)
 
 
-def put(url: str, data: _Data = None, **kwargs: Any) -> Response:
+def put(url: str, data: DataType = None, **kwargs: Any) -> Response:
     r"""Sends a PUT request.
 
     :param url: URL for the new :class:`Request` object.
@@ -138,7 +136,7 @@ def put(url: str, data: _Data = None, **kwargs: Any) -> Response:
     return request("put", url, data=data, **kwargs)
 
 
-def patch(url: str, data: _Data = None, **kwargs: Any) -> Response:
+def patch(url: str, data: DataType = None, **kwargs: Any) -> Response:
     r"""Sends a PATCH request.
 
     :param url: URL for the new :class:`Request` object.

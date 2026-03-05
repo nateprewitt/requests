@@ -77,7 +77,7 @@ if TYPE_CHECKING:
     from .adapters import HTTPAdapter
     from .auth import AuthBase
     from .cookies import RequestsCookieJar
-    from .hooks import _Hook, _HooksInput
+    from ._types import FilesType, HookType, HooksInputType
 
 _JSON = Any
 
@@ -221,9 +221,9 @@ class RequestEncodingMixin:
 
 
 class RequestHooksMixin:
-    hooks: dict[str, list[_Hook]]
+    hooks: dict[str, list[HookType]]
 
-    def register_hook(self, event: str, hook: Iterable[_Hook] | _Hook) -> None:
+    def register_hook(self, event: str, hook: Iterable[HookType] | HookType) -> None:
         """Properly register a hook."""
 
         if event not in self.hooks:
@@ -277,7 +277,7 @@ class Request(RequestHooksMixin):
     method: str | None
     url: str | None
     headers: CaseInsensitiveDict[str] | Mapping[str, str | bytes] | None
-    files: list[tuple[str, Any]] | dict[str, Any] | None
+    files: FilesType
     data: Any
     json: _JSON
     params: dict[str, Any] | list[tuple[str, str]] | bytes | str | None
@@ -289,12 +289,12 @@ class Request(RequestHooksMixin):
         method: str | None = None,
         url: str | None = None,
         headers: Mapping[str, str | bytes] | None = None,
-        files: list[tuple[str, Any]] | dict[str, Any] | None = None,
+        files: FilesType = None,
         data: Any = None,
         params: dict[str, Any] | list[tuple[str, str]] | bytes | str | None = None,
         auth: tuple[str, str] | AuthBase | Callable[[PreparedRequest], PreparedRequest] | None = None,
         cookies: RequestsCookieJar | CookieJar | dict[str, str] | None = None,
-        hooks: _HooksInput | None = None,
+        hooks: HooksInputType | None = None,
         json: _JSON = None,
     ) -> None:
         # Default empty dicts for dict params.
@@ -365,7 +365,7 @@ class PreparedRequest(RequestEncodingMixin, RequestHooksMixin):
     headers: CaseInsensitiveDict[str]
     _cookies: RequestsCookieJar | CookieJar | None
     body: bytes | str | None
-    hooks: dict[str, list[_Hook]]
+    hooks: dict[str, list[HookType]]
     _body_position: int | object | None
 
     def __init__(self) -> None:
@@ -391,12 +391,12 @@ class PreparedRequest(RequestEncodingMixin, RequestHooksMixin):
         method: str | None = None,
         url: str | None = None,
         headers: Mapping[str, str | bytes] | None = None,
-        files: list[tuple[str, Any]] | dict[str, Any] | None = None,
+        files: FilesType = None,
         data: Any = None,
         params: dict[str, Any] | list[tuple[str, str]] | bytes | str | None = None,
         auth: tuple[str, str] | AuthBase | Callable[[PreparedRequest], PreparedRequest] | None = None,
         cookies: RequestsCookieJar | CookieJar | dict[str, str] | None = None,
-        hooks: _HooksInput | None = None,
+        hooks: HooksInputType | None = None,
         json: _JSON = None,
     ) -> None:
         """Prepares the entire request with the given parameters."""
@@ -529,7 +529,7 @@ class PreparedRequest(RequestEncodingMixin, RequestHooksMixin):
                 name, value = header
                 self.headers[to_native_string(name)] = value  # type: ignore[arg-type]  # TODO(typing): str|bytes URL handling
 
-    def prepare_body(self, data: Any, files: list[tuple[str, Any]] | dict[str, Any] | None, json: _JSON = None) -> None:
+    def prepare_body(self, data: Any, files: FilesType, json: _JSON = None) -> None:
         """Prepares the given HTTP body data."""
 
         # Check if file, fo, generator, iterator.
@@ -669,7 +669,7 @@ class PreparedRequest(RequestEncodingMixin, RequestHooksMixin):
         if cookie_header is not None:
             self.headers["Cookie"] = cookie_header
 
-    def prepare_hooks(self, hooks: _HooksInput | None) -> None:
+    def prepare_hooks(self, hooks: HooksInputType | None) -> None:
         """Prepares the given hooks."""
         # hooks can be passed as None to the prepare method and to this
         # method. To prevent iterating over None, simply use an empty list

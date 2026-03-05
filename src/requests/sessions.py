@@ -13,11 +13,23 @@ import sys
 import time
 from collections import OrderedDict
 from datetime import timedelta
+from typing import TYPE_CHECKING, Any, Generator, Iterable, Mapping, MutableMapping
 
 from ._internal_utils import to_native_string
+from ._types import (
+    AuthType,
+    CertType,
+    DataType,
+    FilesType,
+    HookType,
+    HooksType,
+    ParamsType,
+    TimeoutType,
+    VerifyType,
+)
 from .adapters import HTTPAdapter
 from .auth import _basic_auth_str
-from .compat import Mapping, cookielib, urljoin, urlparse
+from .compat import Mapping as MappingCompat, cookielib, urljoin, urlparse
 from .cookies import (
     RequestsCookieJar,
     cookiejar_from_dict,
@@ -54,24 +66,12 @@ from .utils import (  # noqa: F401
     to_key_val_list,
 )
 
-from typing import TYPE_CHECKING, Any, Callable, Generator, Iterable, Mapping, MutableMapping
-
 if TYPE_CHECKING:
     from http.cookiejar import CookieJar
 
     from .adapters import BaseAdapter
     from .auth import AuthBase
-    from .hooks import _Hook
     from .models import Response
-
-_Data = Any
-_Params = MutableMapping[str, Any] | str | bytes | list[tuple[str, str]] | None
-_Timeout = float | tuple[float | None, float | None] | None
-_Verify = bool | str
-_Cert = str | tuple[str, str] | None
-_Hooks = dict[str, list[_Hook]] | None
-_Files = Any
-_Auth = tuple[str, str] | AuthBase | Callable[[PreparedRequest], PreparedRequest] | None
 
 # Preferred clock, based on which one is more accurate on a given system.
 if sys.platform == "win32":
@@ -110,7 +110,7 @@ def merge_setting(request_setting: Any, session_setting: Any, dict_class: type =
     return merged_setting
 
 
-def merge_hooks(request_hooks: _Hooks, session_hooks: _Hooks, dict_class: type = OrderedDict) -> _Hooks:
+def merge_hooks(request_hooks: HooksType, session_hooks: HooksType, dict_class: type = OrderedDict) -> HooksType:
     """Properly merges both requests and session hooks.
 
     This is necessary because when request_hooks == {'response': []}, the
@@ -189,9 +189,9 @@ class SessionRedirectMixin:
         resp: Response,
         req: PreparedRequest,
         stream: bool = False,
-        timeout: _Timeout = None,
-        verify: _Verify = True,
-        cert: _Cert = None,
+        timeout: TimeoutType = None,
+        verify: VerifyType = True,
+        cert: CertType = None,
         proxies: MutableMapping[str, str] | None = None,
         yield_requests: bool = False,
         **adapter_kwargs: Any,
@@ -403,13 +403,13 @@ class Session(SessionRedirectMixin):
     """
 
     headers: CaseInsensitiveDict[str]
-    auth: _Auth
+    auth: AuthType
     proxies: MutableMapping[str, str]
-    hooks: dict[str, list[Callable[..., Any]]]
+    hooks: dict[str, list[HookType]]
     params: MutableMapping[str, Any]
     stream: bool
-    verify: _Verify
-    cert: _Cert
+    verify: VerifyType
+    cert: CertType
     max_redirects: int
     trust_env: bool
     cookies: RequestsCookieJar
@@ -546,19 +546,19 @@ class Session(SessionRedirectMixin):
         self,
         method: str,
         url: str,
-        params: _Params = None,
-        data: _Data = None,
+        params: ParamsType = None,
+        data: DataType = None,
         headers: Mapping[str, str | bytes] | None = None,
         cookies: RequestsCookieJar | CookieJar | dict[str, str] | None = None,
-        files: _Files = None,
-        auth: _Auth = None,
-        timeout: _Timeout = None,
+        files: FilesType = None,
+        auth: AuthType = None,
+        timeout: TimeoutType = None,
         allow_redirects: bool = True,
         proxies: MutableMapping[str, str] | None = None,
-        hooks: _Hooks = None,
+        hooks: HooksType = None,
         stream: bool | None = None,
-        verify: _Verify | None = None,
-        cert: _Cert = None,
+        verify: VerifyType | None = None,
+        cert: CertType = None,
         json: Any = None,
     ) -> Response:
         """Constructs a :class:`Request <Request>`, prepares it and sends it.
@@ -668,7 +668,7 @@ class Session(SessionRedirectMixin):
         kwargs.setdefault("allow_redirects", False)
         return self.request("HEAD", url, **kwargs)
 
-    def post(self, url: str, data: _Data = None, json: Any = None, **kwargs: Any) -> Response:
+    def post(self, url: str, data: DataType = None, json: Any = None, **kwargs: Any) -> Response:
         r"""Sends a POST request. Returns :class:`Response` object.
 
         :param url: URL for the new :class:`Request` object.
@@ -681,7 +681,7 @@ class Session(SessionRedirectMixin):
 
         return self.request("POST", url, data=data, json=json, **kwargs)
 
-    def put(self, url: str, data: _Data = None, **kwargs: Any) -> Response:
+    def put(self, url: str, data: DataType = None, **kwargs: Any) -> Response:
         r"""Sends a PUT request. Returns :class:`Response` object.
 
         :param url: URL for the new :class:`Request` object.
@@ -693,7 +693,7 @@ class Session(SessionRedirectMixin):
 
         return self.request("PUT", url, data=data, **kwargs)
 
-    def patch(self, url: str, data: _Data = None, **kwargs: Any) -> Response:
+    def patch(self, url: str, data: DataType = None, **kwargs: Any) -> Response:
         r"""Sends a PATCH request. Returns :class:`Response` object.
 
         :param url: URL for the new :class:`Request` object.
@@ -795,7 +795,7 @@ class Session(SessionRedirectMixin):
 
         return r
 
-    def merge_environment_settings(self, url: str, proxies: MutableMapping[str, str] | None, stream: bool | None, verify: _Verify | None, cert: _Cert) -> dict[str, Any]:
+    def merge_environment_settings(self, url: str, proxies: MutableMapping[str, str] | None, stream: bool | None, verify: VerifyType | None, cert: CertType) -> dict[str, Any]:
         """
         Check the environment and merge it with some settings.
 

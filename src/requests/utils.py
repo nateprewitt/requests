@@ -59,7 +59,7 @@ from .exceptions import (
 )
 from .structures import CaseInsensitiveDict
 
-from typing import TYPE_CHECKING, Any, AnyStr, Generator, Iterable, Iterator, overload
+from typing import TYPE_CHECKING, Any, AnyStr, Generator, Iterable, Iterator, cast, overload
 
 if TYPE_CHECKING:
     from collections.abc import Mapping as MappingABC, MutableMapping
@@ -67,9 +67,10 @@ if TYPE_CHECKING:
     from http.cookiejar import CookieJar
     from io import BufferedWriter
 
-    from .models import PreparedRequest, Request
+    from .models import PreparedRequest, Request, Response
+    from ._types import SupportsItems
 
-_Uri = str | bytes
+from ._types import UriType
 
 NETRC_FILES: tuple[str, str] = (".netrc", "_netrc")
 
@@ -136,13 +137,15 @@ if sys.platform == "win32":
             return proxy_bypass_registry(host)
 
 
-def dict_to_sequence(d: Any) -> Any:
+def dict_to_sequence(
+    d: SupportsItems | Iterable[tuple[Any, Any]],
+) -> Iterable[tuple[Any, Any]]:
     """Returns an internal sequence dictionary update."""
 
-    if hasattr(d, "items"):
-        d = d.items()
+    if (items := getattr(d, "items", None)) is not None:
+        return items()
 
-    return d
+    return cast(Iterable[tuple[Any, Any]], d)
 
 
 def super_len(o: Any) -> int:
@@ -216,7 +219,7 @@ def super_len(o: Any) -> int:
     return max(0, total_length - current_position)
 
 
-def get_netrc_auth(url: _Uri, raise_errors: bool = False) -> tuple[str, str] | None:
+def get_netrc_auth(url: UriType, raise_errors: bool = False) -> tuple[str, str] | None:
     """Returns the Requests tuple auth for a given url from netrc."""
 
     netrc_file = os.environ.get("NETRC")
@@ -567,7 +570,7 @@ def get_encoding_from_headers(headers: MappingABC[str, str]) -> str | None:
         return "utf-8"
 
 
-def stream_decode_response_unicode(iterator: Iterable[bytes], r: Any) -> Generator[str | bytes, None, None]:
+def stream_decode_response_unicode(iterator: Iterable[bytes], r: Response) -> Generator[str | bytes, None, None]:
     """Stream decodes an iterator."""
 
     if r.encoding is None:
@@ -598,7 +601,7 @@ def iter_slices(string: bytes | str, slice_length: int | None) -> Generator[byte
         pos += slice_length
 
 
-def get_unicode_from_response(r: Any) -> str:
+def get_unicode_from_response(r: Response) -> str | bytes | None:
     """Returns the requested content back in unicode.
 
     :param r: Response object to get unicode content from.
@@ -626,13 +629,13 @@ def get_unicode_from_response(r: Any) -> str:
 
     if encoding:
         try:
-            return str(r.content, encoding)
+            return str(r.content, encoding)  # type: ignore[arg-type]
         except UnicodeError:
             tried_encodings.append(encoding)
 
     # Fall back:
     try:
-        return str(r.content, encoding or "utf-8", errors="replace")
+        return str(r.content, encoding or "utf-8", errors="replace")  # type: ignore[arg-type]
     except TypeError:
         return r.content
 
@@ -773,7 +776,7 @@ def set_environ(env_name: str, value: str | None) -> Iterator[None]:
                 os.environ[env_name] = old_value
 
 
-def should_bypass_proxies(url: _Uri, no_proxy: str | None) -> bool:
+def should_bypass_proxies(url: UriType, no_proxy: str | None) -> bool:
     """
     Returns whether we should bypass proxies or not.
 
@@ -834,7 +837,7 @@ def should_bypass_proxies(url: _Uri, no_proxy: str | None) -> bool:
     return False
 
 
-def get_environ_proxies(url: _Uri, no_proxy: str | None = None) -> dict[str, str]:
+def get_environ_proxies(url: UriType, no_proxy: str | None = None) -> dict[str, str]:
     """
     Return a dict of environment proxies.
 
@@ -846,7 +849,7 @@ def get_environ_proxies(url: _Uri, no_proxy: str | None = None) -> dict[str, str
         return getproxies()
 
 
-def select_proxy(url: _Uri, proxies: MappingABC[str, str] | None) -> str | None:
+def select_proxy(url: UriType, proxies: MappingABC[str, str] | None) -> str | None:
     """Select a proxy for the url, if applicable.
 
     :param url: The url being for the request
@@ -1028,7 +1031,7 @@ def prepend_scheme_if_needed(url: str, new_scheme: str) -> str:
     return urlunparse((scheme, netloc, path, "", query, fragment))
 
 
-def get_auth_from_url(url: _Uri) -> tuple[str, str]:
+def get_auth_from_url(url: UriType) -> tuple[str, str]:
     """Given a url with authentication components, extract them into a tuple of
     username,password.
 
@@ -1074,7 +1077,7 @@ def _validate_header_part(header: tuple[AnyStr, AnyStr], header_part: AnyStr, he
         )
 
 
-def urldefragauth(url: _Uri) -> str:
+def urldefragauth(url: UriType) -> str:
     """
     Given a url remove the fragment and the authentication part.
 

@@ -12,18 +12,17 @@ Available hooks:
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, Iterable, Mapping
+from typing import TYPE_CHECKING, Any, Iterable
+
+from ._types import HookType, HooksInputType
 
 if TYPE_CHECKING:
     from .models import Response
 
-    _Hook = Callable[[Response], Any]
-    _HooksInput = Mapping[str, Iterable[_Hook] | _Hook]
-
 HOOKS: list[str] = ["response"]
 
 
-def default_hooks() -> dict[str, list[_Hook]]:
+def default_hooks() -> dict[str, list[HookType]]:
     return {event: [] for event in HOOKS}
 
 
@@ -32,13 +31,13 @@ def default_hooks() -> dict[str, list[_Hook]]:
 
 def dispatch_hook(
     key: str,
-    hooks: _HooksInput | None,
-    hook_data: Response,
+    hooks: HooksInputType | None,
+    hook_data: "Response",
     **kwargs: Any,
-) -> Response:
+) -> "Response":
     """Dispatches a hook dictionary on a given piece of data."""
     hooks_dict = hooks or {}
-    hook_list: Iterable[_Hook] | _Hook | None = hooks_dict.get(key)
+    hook_list: Iterable[HookType] | HookType | None = hooks_dict.get(key)
     if hook_list:
         if hasattr(hook_list, "__call__"):
             hook_list = [hook_list]  # type: ignore[list-item]
