@@ -47,7 +47,7 @@ if TYPE_CHECKING:
     )
 
     DataType: TypeAlias = (
-        Iterable[bytes]
+        Iterable[bytes | str]
         | str
         | bytes
         | SupportsRead[str | bytes]
