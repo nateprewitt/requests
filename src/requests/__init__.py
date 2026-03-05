@@ -109,9 +109,9 @@ def _check_cryptography(cryptography_version):  # type: ignore
 # Check imported dependencies for compatibility.
 try:
     check_compatibility(
-        urllib3.__version__,
+        urllib3.__version__,  # type: ignore[reportPrivateImportUsage]
         chardet_version,
-        charset_normalizer_version,  # type: ignore[reportPrivateImportUsage]
+        charset_normalizer_version,
     )
 except (AssertionError, ValueError):
     warnings.warn(

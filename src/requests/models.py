@@ -78,12 +78,9 @@ from .utils import (
 if TYPE_CHECKING:
     from http.cookiejar import CookieJar
 
-    from ._types import FilesType, HooksInputType, HookType
+    from ._types import AuthType, FilesType, HooksInputType, HookType, JsonType
     from .adapters import HTTPAdapter
-    from .auth import AuthBase
     from .cookies import RequestsCookieJar
-
-_JSON = Any
 
 #: The set of HTTP status codes that indicate an automatically
 #: processable redirect.
@@ -283,11 +280,9 @@ class Request(RequestHooksMixin):
     headers: CaseInsensitiveDict[str] | Mapping[str, str | bytes] | None
     files: FilesType
     data: Any
-    json: _JSON
+    json: JsonType
     params: dict[str, Any] | list[tuple[str, str]] | bytes | str | None
-    auth: (
-        tuple[str, str] | AuthBase | Callable[[PreparedRequest], PreparedRequest] | None
-    )
+    auth: AuthType
     cookies: RequestsCookieJar | CookieJar | dict[str, str] | None
 
     def __init__(
@@ -298,13 +293,10 @@ class Request(RequestHooksMixin):
         files: FilesType = None,
         data: Any = None,
         params: dict[str, Any] | list[tuple[str, str]] | bytes | str | None = None,
-        auth: tuple[str, str]
-        | AuthBase
-        | Callable[[PreparedRequest], PreparedRequest]
-        | None = None,
+        auth: AuthType = None,
         cookies: RequestsCookieJar | CookieJar | dict[str, str] | None = None,
         hooks: HooksInputType | None = None,
-        json: _JSON = None,
+        json: JsonType = None,
     ) -> None:
         # Default empty dicts for dict params.
         data = [] if data is None else data
@@ -403,13 +395,10 @@ class PreparedRequest(RequestEncodingMixin, RequestHooksMixin):
         files: FilesType = None,
         data: Any = None,
         params: dict[str, Any] | list[tuple[str, str]] | bytes | str | None = None,
-        auth: tuple[str, str]
-        | AuthBase
-        | Callable[[PreparedRequest], PreparedRequest]
-        | None = None,
+        auth: AuthType = None,
         cookies: RequestsCookieJar | CookieJar | dict[str, str] | None = None,
         hooks: HooksInputType | None = None,
-        json: _JSON = None,
+        json: JsonType = None,
     ) -> None:
         """Prepares the entire request with the given parameters."""
 
@@ -545,7 +534,7 @@ class PreparedRequest(RequestEncodingMixin, RequestHooksMixin):
                 name, value = header
                 self.headers[to_native_string(name)] = value  # type: ignore[arg-type]  # TODO(typing): str|bytes URL handling
 
-    def prepare_body(self, data: Any, files: FilesType, json: _JSON = None) -> None:
+    def prepare_body(self, data: Any, files: FilesType, json: JsonType = None) -> None:
         """Prepares the given HTTP body data."""
 
         # Check if file, fo, generator, iterator.
@@ -641,10 +630,7 @@ class PreparedRequest(RequestEncodingMixin, RequestHooksMixin):
 
     def prepare_auth(
         self,
-        auth: tuple[str, str]
-        | AuthBase
-        | Callable[[PreparedRequest], PreparedRequest]
-        | None,
+        auth: AuthType,
         url: str = "",
     ) -> None:
         """Prepares the given HTTP auth data."""
