@@ -358,7 +358,9 @@ class RequestsCookieJar(CookieJar, MutableMapping[str, str | None]):  # type: ig
         """
         return self._find_no_duplicates(name)
 
-    def __setitem__(self, name: str, value: str | Morsel[dict[str, str]] | None) -> None:
+    def __setitem__(
+        self, name: str, value: str | Morsel[dict[str, str]] | None
+    ) -> None:
         """Dict-like __setitem__ for compatibility with client code. Throws
         exception if there is already a cookie of that name in the jar. In that
         case, use the more explicit set() method instead.

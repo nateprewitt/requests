@@ -8,13 +8,19 @@ This module contains the primary objects that power Requests.
 from __future__ import annotations
 
 import datetime
-from typing import TYPE_CHECKING, Any, Iterable, Iterator, Callable, Literal, Mapping, overload
 
 # Import encoding now, to avoid implicit import later.
 # Implicit import within threads may cause LookupError when standard library is in a ZIP,
 # such as in Embedded Python. See https://github.com/psf/requests/issues/3578.
 import encodings.idna  # noqa: F401
+from collections.abc import Callable, Iterable, Iterator, Mapping
 from io import UnsupportedOperation
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Literal,
+    overload,
+)
 
 from urllib3.exceptions import (
     DecodeError,
@@ -30,9 +36,7 @@ from urllib3.util import parse_url
 from ._internal_utils import to_native_string, unicode_is_ascii
 from .auth import HTTPBasicAuth
 from .compat import (
-    Callable,
     JSONDecodeError,
-    Mapping,
     basestring,
     builtin_str,
     chardet,
@@ -74,10 +78,10 @@ from .utils import (
 if TYPE_CHECKING:
     from http.cookiejar import CookieJar
 
+    from ._types import FilesType, HooksInputType, HookType
     from .adapters import HTTPAdapter
     from .auth import AuthBase
     from .cookies import RequestsCookieJar
-    from ._types import FilesType, HookType, HooksInputType
 
 _JSON = Any
 
@@ -281,7 +285,9 @@ class Request(RequestHooksMixin):
     data: Any
     json: _JSON
     params: dict[str, Any] | list[tuple[str, str]] | bytes | str | None
-    auth: tuple[str, str] | AuthBase | Callable[[PreparedRequest], PreparedRequest] | None
+    auth: (
+        tuple[str, str] | AuthBase | Callable[[PreparedRequest], PreparedRequest] | None
+    )
     cookies: RequestsCookieJar | CookieJar | dict[str, str] | None
 
     def __init__(
@@ -292,7 +298,10 @@ class Request(RequestHooksMixin):
         files: FilesType = None,
         data: Any = None,
         params: dict[str, Any] | list[tuple[str, str]] | bytes | str | None = None,
-        auth: tuple[str, str] | AuthBase | Callable[[PreparedRequest], PreparedRequest] | None = None,
+        auth: tuple[str, str]
+        | AuthBase
+        | Callable[[PreparedRequest], PreparedRequest]
+        | None = None,
         cookies: RequestsCookieJar | CookieJar | dict[str, str] | None = None,
         hooks: HooksInputType | None = None,
         json: _JSON = None,
@@ -394,7 +403,10 @@ class PreparedRequest(RequestEncodingMixin, RequestHooksMixin):
         files: FilesType = None,
         data: Any = None,
         params: dict[str, Any] | list[tuple[str, str]] | bytes | str | None = None,
-        auth: tuple[str, str] | AuthBase | Callable[[PreparedRequest], PreparedRequest] | None = None,
+        auth: tuple[str, str]
+        | AuthBase
+        | Callable[[PreparedRequest], PreparedRequest]
+        | None = None,
         cookies: RequestsCookieJar | CookieJar | dict[str, str] | None = None,
         hooks: HooksInputType | None = None,
         json: _JSON = None,
@@ -444,7 +456,11 @@ class PreparedRequest(RequestEncodingMixin, RequestHooksMixin):
             raise UnicodeError
         return host
 
-    def prepare_url(self, url: str | None, params: dict[str, Any] | list[tuple[str, str]] | bytes | str | None) -> None:
+    def prepare_url(
+        self,
+        url: str | None,
+        params: dict[str, Any] | list[tuple[str, str]] | bytes | str | None,
+    ) -> None:
         """Prepares the given HTTP URL."""
         #: Accept objects that have string representations.
         #: We're unable to blindly call unicode/str functions
@@ -623,7 +639,14 @@ class PreparedRequest(RequestEncodingMixin, RequestHooksMixin):
             # but don't provide one. (i.e. not GET or HEAD)
             self.headers["Content-Length"] = "0"
 
-    def prepare_auth(self, auth: tuple[str, str] | AuthBase | Callable[[PreparedRequest], PreparedRequest] | None, url: str = "") -> None:
+    def prepare_auth(
+        self,
+        auth: tuple[str, str]
+        | AuthBase
+        | Callable[[PreparedRequest], PreparedRequest]
+        | None,
+        url: str = "",
+    ) -> None:
         """Prepares the given HTTP auth data."""
 
         # If no Auth is explicitly provided, extract it from the URL first.
@@ -648,7 +671,9 @@ class PreparedRequest(RequestEncodingMixin, RequestHooksMixin):
             # Recompute Content-Length
             self.prepare_content_length(self.body)
 
-    def prepare_cookies(self, cookies: RequestsCookieJar | CookieJar | dict[str, str] | None) -> None:
+    def prepare_cookies(
+        self, cookies: RequestsCookieJar | CookieJar | dict[str, str] | None
+    ) -> None:
         """Prepares the given HTTP cookie data.
 
         This function eventually generates a ``Cookie`` header from the
@@ -854,10 +879,16 @@ class Response:
             return "utf-8"
 
     @overload
-    def iter_content(self, chunk_size: int = 1, decode_unicode: Literal[False] = False) -> Iterator[bytes]: ...
+    def iter_content(
+        self, chunk_size: int = 1, decode_unicode: Literal[False] = False
+    ) -> Iterator[bytes]: ...
     @overload
-    def iter_content(self, chunk_size: int = 1, *, decode_unicode: Literal[True]) -> Iterator[str | bytes]: ...
-    def iter_content(self, chunk_size: int = 1, decode_unicode: bool = False) -> Iterator[str | bytes]:
+    def iter_content(
+        self, chunk_size: int = 1, *, decode_unicode: Literal[True]
+    ) -> Iterator[str | bytes]: ...
+    def iter_content(
+        self, chunk_size: int = 1, decode_unicode: bool = False
+    ) -> Iterator[str | bytes]:
         """Iterates over the response data.  When stream=True is set on the
         request, this avoids reading the content at once into memory for
         large responses.  The chunk size is the number of bytes it should
@@ -1102,4 +1133,3 @@ class Response:
         release_conn = getattr(self.raw, "release_conn", None)
         if release_conn is not None:
             release_conn()
-

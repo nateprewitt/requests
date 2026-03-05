@@ -8,8 +8,8 @@ Data structures that power Requests.
 from __future__ import annotations
 
 from collections import OrderedDict
-from collections.abc import Iterable, Iterator
-from typing import Any, Generic, Mapping, TypeVar, overload
+from collections.abc import Iterable, Iterator, Mapping
+from typing import Any, Generic, TypeVar, overload
 
 from .compat import MutableMapping
 
@@ -47,7 +47,9 @@ class CaseInsensitiveDict(MutableMapping[str, _VT], Generic[_VT]):
     _store: OrderedDict[str, tuple[str, _VT]]
 
     def __init__(
-        self, data: Mapping[str, _VT] | Iterable[tuple[str, _VT]] | None = None, **kwargs: _VT
+        self,
+        data: Mapping[str, _VT] | Iterable[tuple[str, _VT]] | None = None,
+        **kwargs: _VT,
     ) -> None:
         self._store = OrderedDict()
         if data is None:

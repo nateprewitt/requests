@@ -20,6 +20,14 @@ import tempfile
 import warnings
 import zipfile
 from collections import OrderedDict
+from collections.abc import Generator, Iterable, Iterator
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    AnyStr,
+    cast,
+    overload,
+)
 
 from urllib3.util import make_headers, parse_url
 
@@ -59,16 +67,14 @@ from .exceptions import (
 )
 from .structures import CaseInsensitiveDict
 
-from typing import TYPE_CHECKING, Any, AnyStr, Generator, Iterable, Iterator, cast, overload
-
 if TYPE_CHECKING:
-    from collections.abc import Mapping as MappingABC, MutableMapping
-    from contextlib import _GeneratorContextManager
+    from collections.abc import Mapping as MappingABC
+    from collections.abc import MutableMapping
     from http.cookiejar import CookieJar
     from io import BufferedWriter
 
-    from .models import PreparedRequest, Request, Response
     from ._types import SupportsItems, UriType
+    from .models import PreparedRequest, Request, Response
 
 NETRC_FILES: tuple[str, str] = (".netrc", "_netrc")
 
@@ -348,7 +354,9 @@ def from_key_val_list(value: Any) -> dict[Any, Any] | None:
 @overload
 def to_key_val_list(value: None) -> None: ...
 @overload
-def to_key_val_list(value: Mapping[Any, Any] | Iterable[tuple[Any, Any]]) -> list[tuple[Any, Any]]: ...
+def to_key_val_list(
+    value: Mapping[Any, Any] | Iterable[tuple[Any, Any]],
+) -> list[tuple[Any, Any]]: ...
 def to_key_val_list(value: Any) -> list[tuple[Any, Any]] | None:
     """Take an object and test to see if it can be represented as a
     dictionary. If it can be, return a list of tuples, e.g.,
@@ -568,7 +576,9 @@ def get_encoding_from_headers(headers: MappingABC[str, str]) -> str | None:
         return "utf-8"
 
 
-def stream_decode_response_unicode(iterator: Iterable[bytes], r: Response) -> Generator[str | bytes, None, None]:
+def stream_decode_response_unicode(
+    iterator: Iterable[bytes], r: Response
+) -> Generator[str | bytes, None, None]:
     """Stream decodes an iterator."""
 
     if r.encoding is None:
@@ -586,10 +596,16 @@ def stream_decode_response_unicode(iterator: Iterable[bytes], r: Response) -> Ge
 
 
 @overload
-def iter_slices(string: bytes, slice_length: int | None) -> Generator[bytes, None, None]: ...
+def iter_slices(
+    string: bytes, slice_length: int | None
+) -> Generator[bytes, None, None]: ...
 @overload
-def iter_slices(string: str, slice_length: int | None) -> Generator[str, None, None]: ...
-def iter_slices(string: bytes | str, slice_length: int | None) -> Generator[bytes | str, None, None]:
+def iter_slices(
+    string: str, slice_length: int | None
+) -> Generator[str, None, None]: ...
+def iter_slices(
+    string: bytes | str, slice_length: int | None
+) -> Generator[bytes | str, None, None]:
     """Iterate over slices of a string."""
     pos = 0
     if slice_length is None or slice_length <= 0:
@@ -873,7 +889,11 @@ def select_proxy(url: UriType, proxies: MappingABC[str, str] | None) -> str | No
     return proxy
 
 
-def resolve_proxies(request: Request | PreparedRequest, proxies: MutableMapping[str, str] | None, trust_env: bool = True) -> dict[str, str]:
+def resolve_proxies(
+    request: Request | PreparedRequest,
+    proxies: MutableMapping[str, str] | None,
+    trust_env: bool = True,
+) -> dict[str, str]:
     """This method takes proxy information from a request and configuration
     input to resolve a mapping of target proxies. This will consider settings
     such as NO_PROXY to strip proxy configurations.
@@ -1056,7 +1076,9 @@ def check_header_validity(header: tuple[AnyStr, AnyStr]) -> None:
     _validate_header_part(header, value, 1)
 
 
-def _validate_header_part(header: tuple[AnyStr, AnyStr], header_part: AnyStr, header_validator_index: int) -> None:
+def _validate_header_part(
+    header: tuple[AnyStr, AnyStr], header_part: AnyStr, header_validator_index: int
+) -> None:
     if isinstance(header_part, str):
         validator = _HEADER_VALIDATORS_STR[header_validator_index]
     elif isinstance(header_part, bytes):
@@ -1108,4 +1130,3 @@ def rewind_body(prepared_request: PreparedRequest) -> None:
             )
     else:
         raise UnrewindableBodyError("Unable to rewind request body for redirect.")
-

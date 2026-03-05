@@ -12,9 +12,10 @@ Available hooks:
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Iterable
+from collections.abc import Iterable
+from typing import TYPE_CHECKING, Any
 
-from ._types import HookType, HooksInputType
+from ._types import HooksInputType, HookType
 
 if TYPE_CHECKING:
     from .models import Response
@@ -32,9 +33,9 @@ def default_hooks() -> dict[str, list[HookType]]:
 def dispatch_hook(
     key: str,
     hooks: HooksInputType | None,
-    hook_data: "Response",
+    hook_data: Response,
     **kwargs: Any,
-) -> "Response":
+) -> Response:
     """Dispatches a hook dictionary on a given piece of data."""
     hooks_dict = hooks or {}
     hook_list: Iterable[HookType] | HookType | None = hooks_dict.get(key)

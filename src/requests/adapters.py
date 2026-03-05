@@ -12,7 +12,8 @@ import os.path
 import socket  # noqa: F401
 import typing
 import warnings
-from typing import Any, MutableMapping
+from collections.abc import MutableMapping
+from typing import Any
 
 from urllib3.exceptions import (
     ClosedPoolError,
@@ -69,11 +70,11 @@ except ImportError:
 
 
 if typing.TYPE_CHECKING:
-    from urllib3.poolmanager import PoolManager as _PoolManager
     from urllib3.connectionpool import ConnectionPool
+    from urllib3.poolmanager import PoolManager as _PoolManager
 
-    from .models import PreparedRequest
     from ._types import CertType, TimeoutType, VerifyType
+    from .models import PreparedRequest
 
 
 DEFAULT_POOLBLOCK = False
@@ -83,10 +84,10 @@ DEFAULT_POOL_TIMEOUT = None
 
 
 def _urllib3_request_context(
-    request: "PreparedRequest",
-    verify: "bool | str | None",
-    client_cert: "tuple[str, str] | str | None",
-    poolmanager: "PoolManager",
+    request: PreparedRequest,
+    verify: bool | str | None,
+    client_cert: tuple[str, str] | str | None,
+    poolmanager: PoolManager,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     host_params = {}
     pool_kwargs = {}
@@ -237,7 +238,11 @@ class HTTPAdapter(BaseAdapter):
         )
 
     def init_poolmanager(
-        self, connections: int, maxsize: int, block: bool = DEFAULT_POOLBLOCK, **pool_kwargs: Any
+        self,
+        connections: int,
+        maxsize: int,
+        block: bool = DEFAULT_POOLBLOCK,
+        **pool_kwargs: Any,
     ) -> None:
         """Initializes a urllib3 PoolManager.
 
@@ -300,7 +305,9 @@ class HTTPAdapter(BaseAdapter):
 
         return manager
 
-    def cert_verify(self, conn: Any, url: str, verify: VerifyType, cert: CertType) -> None:
+    def cert_verify(
+        self, conn: Any, url: str, verify: VerifyType, cert: CertType
+    ) -> None:
         """Verify a SSL certificate. This method should not be called from user
         code, and is only exposed for use when subclassing the
         :class:`HTTPAdapter <requests.adapters.HTTPAdapter>`.
@@ -393,7 +400,9 @@ class HTTPAdapter(BaseAdapter):
 
         return response
 
-    def build_connection_pool_key_attributes(self, request: PreparedRequest, verify: VerifyType, cert: CertType = None) -> tuple[dict[str, Any], dict[str, Any]]:
+    def build_connection_pool_key_attributes(
+        self, request: PreparedRequest, verify: VerifyType, cert: CertType = None
+    ) -> tuple[dict[str, Any], dict[str, Any]]:
         """Build the PoolKey attributes used by urllib3 to return a connection.
 
         This looks at the PreparedRequest, the user-specified verify value,
@@ -443,7 +452,13 @@ class HTTPAdapter(BaseAdapter):
         """
         return _urllib3_request_context(request, verify, cert, self.poolmanager)
 
-    def get_connection_with_tls_context(self, request: PreparedRequest, verify: VerifyType, proxies: MutableMapping[str, str] | None = None, cert: CertType = None) -> ConnectionPool:
+    def get_connection_with_tls_context(
+        self,
+        request: PreparedRequest,
+        verify: VerifyType,
+        proxies: MutableMapping[str, str] | None = None,
+        cert: CertType = None,
+    ) -> ConnectionPool:
         """Returns a urllib3 connection for the given request and TLS settings.
         This should not be called from user code, and is only exposed for use
         when subclassing the :class:`HTTPAdapter <requests.adapters.HTTPAdapter>`.
@@ -492,7 +507,9 @@ class HTTPAdapter(BaseAdapter):
 
         return conn
 
-    def get_connection(self, url: str, proxies: MutableMapping[str, str] | None = None) -> ConnectionPool:
+    def get_connection(
+        self, url: str, proxies: MutableMapping[str, str] | None = None
+    ) -> ConnectionPool:
         """DEPRECATED: Users should move to `get_connection_with_tls_context`
         for all subclasses of HTTPAdapter using Requests>=2.32.2.
 
@@ -543,7 +560,9 @@ class HTTPAdapter(BaseAdapter):
         for proxy in self.proxy_manager.values():
             proxy.clear()
 
-    def request_url(self, request: PreparedRequest, proxies: MutableMapping[str, str] | None) -> str:
+    def request_url(
+        self, request: PreparedRequest, proxies: MutableMapping[str, str] | None
+    ) -> str:
         """Obtain the url to use when making the final request.
 
         If the message is being sent through a HTTP proxy, the full URL has to

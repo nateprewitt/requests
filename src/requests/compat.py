@@ -10,13 +10,15 @@ compatibility until the next major version.
 from __future__ import annotations
 
 import importlib
-from types import ModuleType
 import sys
+from types import ModuleType
 
 # -------
 # urllib3
 # -------
-from urllib3 import __version__ as urllib3_version  # type: ignore[reportPrivateImportUsage]
+from urllib3 import (
+    __version__ as urllib3_version,  # type: ignore[reportPrivateImportUsage]
+)
 
 # Detect which major version of urllib3 is being used.
 try:

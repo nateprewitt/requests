@@ -8,13 +8,10 @@ These types are for internal use and type checking purposes.
 
 from __future__ import annotations
 
+from collections.abc import Callable, Iterable, Mapping, MutableMapping
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
-    Iterable,
-    Mapping,
-    MutableMapping,
 )
 
 if TYPE_CHECKING:
@@ -81,10 +78,7 @@ if TYPE_CHECKING:
     )
 
     AuthType: TypeAlias = (
-        tuple[str, str]
-        | AuthBase
-        | Callable[[PreparedRequest], PreparedRequest]
-        | None
+        tuple[str, str] | AuthBase | Callable[[PreparedRequest], PreparedRequest] | None
     )
 
     TimeoutType: TypeAlias = float | tuple[float | None, float | None] | None

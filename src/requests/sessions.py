@@ -12,13 +12,14 @@ import os
 import sys
 import time
 from collections import OrderedDict
+from collections.abc import Generator, Mapping, MutableMapping
 from datetime import timedelta
-from typing import TYPE_CHECKING, Any, Generator, Iterable, Mapping, MutableMapping
+from typing import TYPE_CHECKING, Any
 
 from ._internal_utils import to_native_string
 from .adapters import HTTPAdapter
 from .auth import _basic_auth_str
-from .compat import Mapping as MappingCompat, cookielib, urljoin, urlparse
+from .compat import cookielib, urljoin, urlparse
 from .cookies import (
     RequestsCookieJar,
     cookiejar_from_dict,
@@ -59,19 +60,18 @@ from .utils import (  # noqa: F401
 if TYPE_CHECKING:
     from http.cookiejar import CookieJar
 
-    from .adapters import BaseAdapter
-    from .auth import AuthBase
     from ._types import (
         AuthType,
         CertType,
         DataType,
         FilesType,
-        HookType,
         HooksType,
+        HookType,
         ParamsType,
         TimeoutType,
         VerifyType,
     )
+    from .adapters import BaseAdapter
 
 # Preferred clock, based on which one is more accurate on a given system.
 if sys.platform == "win32":
@@ -80,7 +80,9 @@ else:
     preferred_clock = time.time
 
 
-def merge_setting(request_setting: Any, session_setting: Any, dict_class: type = OrderedDict) -> Any:
+def merge_setting(
+    request_setting: Any, session_setting: Any, dict_class: type = OrderedDict
+) -> Any:
     """Determines appropriate setting for a given request, taking into account
     the explicit setting on that request, and the setting in the session. If a
     setting is a dictionary, they will be merged together using `dict_class`
@@ -110,7 +112,9 @@ def merge_setting(request_setting: Any, session_setting: Any, dict_class: type =
     return merged_setting
 
 
-def merge_hooks(request_hooks: HooksType, session_hooks: HooksType, dict_class: type = OrderedDict) -> HooksType:
+def merge_hooks(
+    request_hooks: HooksType, session_hooks: HooksType, dict_class: type = OrderedDict
+) -> HooksType:
     """Properly merges both requests and session hooks.
 
     This is necessary because when request_hooks == {'response': []}, the
@@ -308,7 +312,9 @@ class SessionRedirectMixin:
                 url = self.get_redirect_target(resp)
                 yield resp
 
-    def rebuild_auth(self, prepared_request: PreparedRequest, response: Response) -> None:
+    def rebuild_auth(
+        self, prepared_request: PreparedRequest, response: Response
+    ) -> None:
         """When being redirected we may want to strip authentication from the
         request to avoid leaking credentials. This method intelligently removes
         and reapplies authentication where possible to avoid credential loss.
@@ -329,7 +335,11 @@ class SessionRedirectMixin:
         if new_auth is not None:
             prepared_request.prepare_auth(new_auth)
 
-    def rebuild_proxies(self, prepared_request: PreparedRequest, proxies: MutableMapping[str, str] | None) -> dict[str, str]:
+    def rebuild_proxies(
+        self,
+        prepared_request: PreparedRequest,
+        proxies: MutableMapping[str, str] | None,
+    ) -> dict[str, str]:
         """This method re-evaluates the proxy configuration by considering the
         environment variables. If we are redirected to a URL covered by
         NO_PROXY, we strip the proxy configuration. Otherwise, we set missing
@@ -360,7 +370,9 @@ class SessionRedirectMixin:
 
         return new_proxies
 
-    def rebuild_method(self, prepared_request: PreparedRequest, response: Response) -> None:
+    def rebuild_method(
+        self, prepared_request: PreparedRequest, response: Response
+    ) -> None:
         """When being redirected we may want to change the method of the request
         based on certain specs or browser behavior.
         """
@@ -668,7 +680,9 @@ class Session(SessionRedirectMixin):
         kwargs.setdefault("allow_redirects", False)
         return self.request("HEAD", url, **kwargs)
 
-    def post(self, url: str, data: DataType = None, json: Any = None, **kwargs: Any) -> Response:
+    def post(
+        self, url: str, data: DataType = None, json: Any = None, **kwargs: Any
+    ) -> Response:
         r"""Sends a POST request. Returns :class:`Response` object.
 
         :param url: URL for the new :class:`Request` object.
@@ -795,7 +809,14 @@ class Session(SessionRedirectMixin):
 
         return r
 
-    def merge_environment_settings(self, url: str, proxies: MutableMapping[str, str] | None, stream: bool | None, verify: VerifyType | None, cert: CertType) -> dict[str, Any]:
+    def merge_environment_settings(
+        self,
+        url: str,
+        proxies: MutableMapping[str, str] | None,
+        stream: bool | None,
+        verify: VerifyType | None,
+        cert: CertType,
+    ) -> dict[str, Any]:
         """
         Check the environment and merge it with some settings.
 
