@@ -299,9 +299,12 @@ class HTTPAdapter(BaseAdapter):
                 cert_loc = verify
 
             if not cert_loc:
-                cert_loc = extract_zipped_paths(DEFAULT_CA_BUNDLE_PATH)
+                # If a custom ssl_context is provided, skip injecting the default
+                # certifi CA bundle. We assume it will manage its own certs.
+                if conn.conn_kw.get("ssl_context") is None:
+                    cert_loc = extract_zipped_paths(DEFAULT_CA_BUNDLE_PATH)
 
-            if not cert_loc or not os.path.exists(cert_loc):
+            if cert_loc and not os.path.exists(cert_loc):
                 raise OSError(
                     f"Could not find a suitable TLS CA certificate bundle, "
                     f"invalid path: {cert_loc}"
@@ -309,10 +312,11 @@ class HTTPAdapter(BaseAdapter):
 
             conn.cert_reqs = "CERT_REQUIRED"
 
-            if not os.path.isdir(cert_loc):
-                conn.ca_certs = cert_loc
-            else:
-                conn.ca_cert_dir = cert_loc
+            if cert_loc:
+                if not os.path.isdir(cert_loc):
+                    conn.ca_certs = cert_loc
+                else:
+                    conn.ca_cert_dir = cert_loc
         else:
             conn.cert_reqs = "CERT_NONE"
             conn.ca_certs = None
