@@ -52,7 +52,7 @@ except ImportError:
     charset_normalizer_version = None
 
 try:
-    from chardet import __version__ as chardet_version
+    from chardet import __version__ as chardet_version  # type: ignore[import-not-found]
 except ImportError:
     chardet_version = None
 

@@ -16,7 +16,7 @@ except ImportError:
     charset_normalizer = None
 
 try:
-    import chardet
+    import chardet  # type: ignore[import-not-found]
 except ImportError:
     chardet = None
 

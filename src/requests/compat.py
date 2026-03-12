@@ -62,14 +62,14 @@ is_py3 = _ver[0] == 3
 # json/simplejson module import resolution
 has_simplejson = False
 try:
-    import simplejson as json
+    import simplejson as json  # type: ignore[import-not-found]
 
     has_simplejson = True
 except ImportError:
     import json
 
 if has_simplejson:
-    from simplejson import JSONDecodeError
+    from simplejson import JSONDecodeError  # type: ignore[import-not-found]
 else:
     from json import JSONDecodeError
 
