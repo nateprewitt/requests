@@ -100,3 +100,7 @@ addopts = "--doctest-modules"
 doctest_optionflags = "NORMALIZE_WHITESPACE ELLIPSIS"
 minversion = "6.2"
 testpaths = ["tests"]
+
+
+[tool.pyright]
+include = ["src/requests"]
