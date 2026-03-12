@@ -14,7 +14,7 @@ import threading
 import time
 import warnings
 from base64 import b64encode
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, overload
 
 from ._internal_utils import to_native_string
 from .compat import basestring, str, urlparse
@@ -85,6 +85,11 @@ class HTTPBasicAuth(AuthBase):
     username: bytes | str
     password: bytes | str
 
+    @overload
+    def __init__(self, username: str, password: str) -> None: ...
+    @overload
+    def __init__(self, username: bytes, password: bytes) -> None: ...
+
     def __init__(self, username: bytes | str, password: bytes | str) -> None:
         self.username = username
         self.password = password
@@ -124,6 +129,11 @@ class HTTPDigestAuth(AuthBase):
     chal: Any
     pos: Any
     num_401_calls: Any
+
+    @overload
+    def __init__(self, username: str, password: str) -> None: ...
+    @overload
+    def __init__(self, username: bytes, password: bytes) -> None: ...
 
     def __init__(self, username: bytes | str, password: bytes | str) -> None:
         self.username = username
