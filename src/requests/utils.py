@@ -1127,10 +1127,10 @@ def rewind_body(prepared_request: PreparedRequest) -> None:
     """
     body_seek = getattr(prepared_request.body, "seek", None)
     if body_seek is not None and isinstance(
-        prepared_request._body_position, integer_types
+        prepared_request._body_position, integer_types  # type: ignore[reportPrivateUsage]
     ):
         try:
-            body_seek(prepared_request._body_position)
+            body_seek(prepared_request._body_position)  # type: ignore[reportPrivateUsage]
         except OSError:
             raise UnrewindableBodyError(
                 "An error occurred when rewinding request body for redirect."
