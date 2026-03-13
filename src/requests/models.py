@@ -659,11 +659,11 @@ class PreparedRequest(RequestEncodingMixin, RequestHooksMixin):
             auth = url_auth if any(url_auth) else None
 
         if auth:
-            if isinstance(auth, tuple) and len(auth) == 2:
+            if isinstance(auth, tuple) and len(auth) == 2:  # type: ignore[arg-type]  # pyright widens tuple from Callable in AuthType
                 # special-case basic HTTP auth
-                auth_handler = HTTPBasicAuth(*auth)
+                auth_handler = HTTPBasicAuth(*auth)  # type: ignore[arg-type]  # pyright widens tuple from Callable in AuthType
             else:
-                assert callable(auth)
+                assert callable(auth)  # type: ignore[arg-type]
                 auth_handler = auth
 
             # Allow auth to make its changes.
