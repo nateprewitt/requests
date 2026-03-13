@@ -250,7 +250,7 @@ class RequestHooksMixin:
         if isinstance(hook, Callable):
             self.hooks[event].append(hook)
         elif hasattr(hook, "__iter__"):
-            self.hooks[event].extend(h for h in hook if isinstance(h, Callable))
+            self.hooks[event].extend(h for h in hook if isinstance(h, Callable))  # type: ignore[reportUnnecessaryIsInstance]  # defensive runtime filter
 
     def deregister_hook(self, event: str, hook: HookType) -> bool:
         """Deregister a previously registered hook.
