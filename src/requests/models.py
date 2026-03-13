@@ -35,6 +35,7 @@ from urllib3.util import parse_url
 
 from ._internal_utils import to_native_string, unicode_is_ascii
 from .auth import HTTPBasicAuth
+from ._types import SupportsRead
 from .compat import (
     JSONDecodeError,
     basestring,
@@ -140,10 +141,10 @@ class RequestEncodingMixin:
 
         if isinstance(data, (str, bytes)):
             return data
-        elif hasattr(data, "read"):
+        elif isinstance(data, SupportsRead):
             return data
         elif hasattr(data, "__iter__"):
-            result = []
+            result: list[tuple[bytes, bytes]] = []
             for k, vs in to_key_val_list(data):
                 if isinstance(vs, basestring) or not hasattr(vs, "__iter__"):
                     vs = [vs]
@@ -157,10 +158,10 @@ class RequestEncodingMixin:
                         )
             return urlencode(result, doseq=True)
         else:
-            return data
+            return data  # type: ignore[return-value]  # unreachable for valid DataType
 
     @staticmethod
-    def _encode_files(files: Any, data: Any) -> tuple[bytes, str]:
+    def _encode_files(files: FilesType, data: DataType) -> tuple[bytes, str]:
         """Build the body for a multipart/form-data request.
 
         Will successfully encode files when passed as a dict or a list of
@@ -567,14 +568,9 @@ class PreparedRequest(RequestEncodingMixin, RequestHooksMixin):
             if not isinstance(body, bytes):
                 body = body.encode("utf-8")
 
-        is_stream = all(
-            [
-                hasattr(data, "__iter__"),
-                not isinstance(data, (basestring, list, tuple, Mapping)),
-            ]
-        )
-
-        if is_stream:
+        if isinstance(data, Iterable) and not isinstance(
+            data, (str, bytes, list, tuple, Mapping)
+        ):
             try:
                 length = super_len(data)
             except (TypeError, AttributeError, UnsupportedOperation):

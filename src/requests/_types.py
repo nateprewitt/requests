@@ -12,20 +12,26 @@ from collections.abc import Callable, Iterable, Mapping, MutableMapping
 from typing import (
     TYPE_CHECKING,
     Any,
+    Protocol,
+    TypeVar,
+    runtime_checkable,
 )
 
+_T_co = TypeVar("_T_co", covariant=True)
+
+
+@runtime_checkable
+class SupportsRead(Protocol[_T_co]):
+    def read(self, length: int = ...) -> _T_co: ...
+
+
 if TYPE_CHECKING:
-    from typing import Protocol, TypeAlias, TypeVar
+    from typing import TypeAlias
 
     from .auth import AuthBase
     from .cookies import RequestsCookieJar
     from .models import PreparedRequest, Response
     from .structures import CaseInsensitiveDict
-
-    _T_co = TypeVar("_T_co", covariant=True)
-
-    class SupportsRead(Protocol[_T_co]):
-        def read(self, length: int = ...) -> _T_co: ...
 
     class SupportsItems(Protocol):
         def items(self) -> Iterable[tuple[Any, Any]]: ...

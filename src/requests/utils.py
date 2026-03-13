@@ -25,6 +25,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     AnyStr,
+    TypeVar,
     cast,
     overload,
 )
@@ -81,6 +82,9 @@ NETRC_FILES: tuple[str, str] = (".netrc", "_netrc")
 DEFAULT_CA_BUNDLE_PATH: str = certs.where()
 
 DEFAULT_PORTS: dict[str, int] = {"http": 80, "https": 443}
+
+_KT = TypeVar("_KT")
+_VT = TypeVar("_VT")
 
 # Ensure that ', ' is used to preserve previous delimiter behavior.
 DEFAULT_ACCEPT_ENCODING: str = ", ".join(
@@ -355,9 +359,11 @@ def from_key_val_list(value: Any) -> dict[Any, Any] | None:
 def to_key_val_list(value: None) -> None: ...
 @overload
 def to_key_val_list(
-    value: Mapping[Any, Any] | Iterable[tuple[Any, Any]],
-) -> list[tuple[Any, Any]]: ...
-def to_key_val_list(value: Any) -> list[tuple[Any, Any]] | None:
+    value: Mapping[_KT, _VT] | Iterable[tuple[_KT, _VT]],
+) -> list[tuple[_KT, _VT]]: ...
+def to_key_val_list(
+    value: Mapping[_KT, _VT] | Iterable[tuple[_KT, _VT]] | None,
+) -> list[tuple[_KT, _VT]] | None:
     """Take an object and test to see if it can be represented as a
     dictionary. If it can be, return a list of tuples, e.g.,
 
