@@ -170,7 +170,7 @@ class HTTPDigestAuth(AuthBase):
         # lambdas assume digest modules are imported at the top level
         if _algorithm == "MD5" or _algorithm == "MD5-SESS":
 
-            def md5_utf8(x):
+            def md5_utf8(x: str | bytes) -> str:
                 if isinstance(x, str):
                     x = x.encode("utf-8")
                 return hashlib.md5(x).hexdigest()
@@ -178,7 +178,7 @@ class HTTPDigestAuth(AuthBase):
             hash_utf8 = md5_utf8
         elif _algorithm == "SHA":
 
-            def sha_utf8(x):
+            def sha_utf8(x: str | bytes) -> str:
                 if isinstance(x, str):
                     x = x.encode("utf-8")
                 return hashlib.sha1(x).hexdigest()
@@ -186,7 +186,7 @@ class HTTPDigestAuth(AuthBase):
             hash_utf8 = sha_utf8
         elif _algorithm == "SHA-256":
 
-            def sha256_utf8(x):
+            def sha256_utf8(x: str | bytes) -> str:
                 if isinstance(x, str):
                     x = x.encode("utf-8")
                 return hashlib.sha256(x).hexdigest()
@@ -194,7 +194,7 @@ class HTTPDigestAuth(AuthBase):
             hash_utf8 = sha256_utf8
         elif _algorithm == "SHA-512":
 
-            def sha512_utf8(x):
+            def sha512_utf8(x: str | bytes) -> str:
                 if isinstance(x, str):
                     x = x.encode("utf-8")
                 return hashlib.sha512(x).hexdigest()
