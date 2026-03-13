@@ -870,7 +870,7 @@ def get_environ_proxies(url: UriType, no_proxy: str | None = None) -> dict[str, 
         return getproxies()
 
 
-def select_proxy(url: UriType, proxies: MappingABC[str, str] | None) -> str | None:
+def select_proxy(url: str, proxies: MappingABC[str, str] | None) -> str | None:
     """Select a proxy for the url, if applicable.
 
     :param url: The url being for the request
@@ -879,12 +879,12 @@ def select_proxy(url: UriType, proxies: MappingABC[str, str] | None) -> str | No
     proxies = proxies or {}
     urlparts = urlparse(url)
     if urlparts.hostname is None:
-        return proxies.get(urlparts.scheme, proxies.get("all"))  # type: ignore[arg-type]  # TODO(typing): str|bytes URL handling
+        return proxies.get(urlparts.scheme, proxies.get("all"))
 
     proxy_keys = [
-        urlparts.scheme + "://" + urlparts.hostname,  # type: ignore[operator]  # TODO(typing): str|bytes URL handling
+        urlparts.scheme + "://" + urlparts.hostname,
         urlparts.scheme,
-        "all://" + urlparts.hostname,  # type: ignore[operator]  # TODO(typing): str|bytes URL handling
+        "all://" + urlparts.hostname,
         "all",
     ]
     proxy = None
