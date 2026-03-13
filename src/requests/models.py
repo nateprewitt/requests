@@ -47,7 +47,11 @@ from .compat import (
     urlunparse,
 )
 from .compat import json as complexjson
-from .cookies import _copy_cookie_jar, cookiejar_from_dict, get_cookie_header
+from .cookies import (
+    _copy_cookie_jar,  # type: ignore[reportPrivateUsage]
+    cookiejar_from_dict,
+    get_cookie_header,
+)
 from .exceptions import (
     ChunkedEncodingError,
     ConnectionError,
@@ -83,12 +87,12 @@ if TYPE_CHECKING:
         AuthType,
         BodyType,
         DataType,
+        EncodableDataType,
         FilesType,
         HooksInputType,
         HookType,
         JsonType,
-        _EncodableDataType,
-        _KVDataType,
+        KVDataType,
     )
     from .adapters import HTTPAdapter
     from .cookies import RequestsCookieJar
@@ -133,7 +137,7 @@ class RequestEncodingMixin:
         return "".join(url)
 
     @staticmethod
-    def _encode_params(data: _EncodableDataType) -> str | bytes | SupportsRead[str | bytes]:
+    def _encode_params(data: EncodableDataType) -> str | bytes | SupportsRead[str | bytes]:
         """Encode parameters in a piece of data.
 
         Will successfully encode parameters when passed as a dict or a list of
@@ -163,7 +167,7 @@ class RequestEncodingMixin:
             return data  # type: ignore[return-value]  # unreachable for valid DataType
 
     @staticmethod
-    def _encode_files(files: FilesType, data: _KVDataType | str | bytes | None) -> tuple[bytes, str]:
+    def _encode_files(files: FilesType, data: KVDataType | str | bytes | None) -> tuple[bytes, str]:
         """Build the body for a multipart/form-data request.
 
         Will successfully encode files when passed as a dict or a list of

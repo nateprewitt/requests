@@ -52,16 +52,16 @@ if TYPE_CHECKING:
         | None
     )
 
-    _KVDataType: TypeAlias = (
+    KVDataType: TypeAlias = (
         list[tuple[Any, Any]] | tuple[tuple[Any, Any], ...] | Mapping[Any, Any]
     )
 
-    _EncodableDataType: TypeAlias = (
-        _KVDataType | str | bytes | SupportsRead[str | bytes]
+    EncodableDataType: TypeAlias = (
+        KVDataType | str | bytes | SupportsRead[str | bytes]
     )
 
     DataType: TypeAlias = (
-        _KVDataType
+        KVDataType
         | Iterable[bytes | str]
         | str
         | bytes
