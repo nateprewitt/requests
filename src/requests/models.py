@@ -88,6 +88,7 @@ if TYPE_CHECKING:
         HookType,
         JsonType,
         _EncodableDataType,
+        _KVDataType,
     )
     from .adapters import HTTPAdapter
     from .cookies import RequestsCookieJar
@@ -162,7 +163,7 @@ class RequestEncodingMixin:
             return data  # type: ignore[return-value]  # unreachable for valid DataType
 
     @staticmethod
-    def _encode_files(files: FilesType, data: DataType) -> tuple[bytes, str]:
+    def _encode_files(files: FilesType, data: _KVDataType | str | bytes | None) -> tuple[bytes, str]:
         """Build the body for a multipart/form-data request.
 
         Will successfully encode files when passed as a dict or a list of
@@ -176,7 +177,7 @@ class RequestEncodingMixin:
         elif isinstance(data, basestring):
             raise ValueError("Data must not be a string.")
 
-        new_fields = []
+        new_fields: list[RequestField | tuple[str, bytes]] = []
         fields = to_key_val_list(data or {})
         files = to_key_val_list(files or {})
 
@@ -217,7 +218,7 @@ class RequestEncodingMixin:
                 fdata = fp
             elif hasattr(fp, "read"):
                 fdata = fp.read()
-            elif fp is None:
+            elif fp is None:  # type: ignore[reportUnnecessaryComparison]  # defensive check for untyped callers
                 continue
             else:
                 fdata = fp
@@ -606,7 +607,7 @@ class PreparedRequest(RequestEncodingMixin, RequestHooksMixin):
         else:
             # Multi-part file uploads.
             if files:
-                (body, content_type) = self._encode_files(files, data)
+                (body, content_type) = self._encode_files(files, data)  # type: ignore[arg-type]  # is_stream filters non-encodable iterables
             else:
                 if data:
                     body = self._encode_params(data)  # type: ignore[arg-type]  # is_stream filters non-encodable iterables
