@@ -943,9 +943,26 @@ class Response:
 
         return chunks
 
+    @overload
     def iter_lines(
-        self, chunk_size=ITER_CHUNK_SIZE, decode_unicode=False, delimiter=None
-    ):
+        self,
+        chunk_size: int = ITER_CHUNK_SIZE,
+        decode_unicode: Literal[False] = False,
+        delimiter: bytes | None = None,
+    ) -> Iterator[bytes]: ...
+    @overload
+    def iter_lines(
+        self,
+        chunk_size: int = ITER_CHUNK_SIZE,
+        decode_unicode: Literal[True] = ...,  # type: ignore[assignment]
+        delimiter: str | bytes | None = None,
+    ) -> Iterator[str | bytes]: ...
+    def iter_lines(
+        self,
+        chunk_size: int = ITER_CHUNK_SIZE,
+        decode_unicode: bool = False,
+        delimiter: str | bytes | None = None,
+    ) -> Iterator[str | bytes]:
         """Iterates over the response data, one line at a time.  When
         stream=True is set on the request, this avoids reading the
         content at once into memory for large responses.
@@ -953,16 +970,16 @@ class Response:
         .. note:: This method is not reentrant safe.
         """
 
-        pending = None
+        pending: str | bytes | None = None
 
         for chunk in self.iter_content(
             chunk_size=chunk_size, decode_unicode=decode_unicode
         ):
             if pending is not None:
-                chunk = pending + chunk  # type: ignore[operator]  # TODO(typing): str|bytes URL handling
+                chunk = pending + chunk  # type: ignore[operator]
 
             if delimiter:
-                lines = chunk.split(delimiter)
+                lines = chunk.split(delimiter)  # type: ignore[arg-type]
             else:
                 lines = chunk.splitlines()
 
