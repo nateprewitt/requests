@@ -233,7 +233,7 @@ class HTTPDigestAuth(AuthBase):
 
         cnonce = hashlib.sha1(s).hexdigest()[:16]
         if _algorithm == "MD5-SESS":
-            HA1 = hash_utf8(f"{HA1}:{nonce}:{cnonce}")
+            HA1 = hash_utf8(f"{HA1}:{nonce}:{cnonce}")  # type: ignore[reportConstantRedefinition]  # RFC 2617 terminology
 
         if not qop:
             respdig = KD(HA1, f"{nonce}:{HA2}")
@@ -299,9 +299,9 @@ class HTTPDigestAuth(AuthBase):
             r.content
             r.close()
             prep = r.request.copy()
-            assert prep._cookies is not None
-            extract_cookies_to_jar(prep._cookies, r.request, r.raw)
-            prep.prepare_cookies(prep._cookies)
+            assert prep._cookies is not None  # type: ignore[reportPrivateUsage]
+            extract_cookies_to_jar(prep._cookies, r.request, r.raw)  # type: ignore[reportPrivateUsage]
+            prep.prepare_cookies(prep._cookies)  # type: ignore[reportPrivateUsage]
 
             _digest_auth = self.build_digest_header(prep.method or "", prep.url or "")
             if _digest_auth:
