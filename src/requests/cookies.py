@@ -166,7 +166,7 @@ def remove_cookie_by_name(
 
     Wraps CookieJar.clear(), is O(n).
     """
-    clearables = []
+    clearables: list[tuple[str, str, str]] = []
     for cookie in cookiejar:
         if cookie.name != name:
             continue
@@ -262,16 +262,16 @@ class RequestsCookieJar(CookieJar, MutableMapping[str, str | None]):  # type: ig
         """
         return list(self.iterkeys())
 
-    def itervalues(self) -> Iterator[str]:
+    def itervalues(self) -> Iterator[str | None]:
         """Dict-like itervalues() that returns an iterator of values of cookies
         from the jar.
 
         .. seealso:: iterkeys() and iteritems().
         """
         for cookie in iter(self):
-            yield cookie.value or ""
+            yield cookie.value
 
-    def values(self) -> list[str]:  # type: ignore[override]
+    def values(self) -> list[str | None]:  # type: ignore[override]
         """Dict-like values() that returns a list of values of cookies from the
         jar.
 
@@ -279,16 +279,16 @@ class RequestsCookieJar(CookieJar, MutableMapping[str, str | None]):  # type: ig
         """
         return list(self.itervalues())
 
-    def iteritems(self) -> Iterator[tuple[str, str]]:
+    def iteritems(self) -> Iterator[tuple[str, str | None]]:
         """Dict-like iteritems() that returns an iterator of name-value tuples
         from the jar.
 
         .. seealso:: iterkeys() and itervalues().
         """
         for cookie in iter(self):
-            yield cookie.name, cookie.value or ""
+            yield cookie.name, cookie.value
 
-    def items(self) -> list[tuple[str, str]]:  # type: ignore[override]
+    def items(self) -> list[tuple[str, str | None]]:  # type: ignore[override]
         """Dict-like items() that returns a list of name-value tuples from the
         jar. Allows client-code to call ``dict(RequestsCookieJar)`` and get a
         vanilla python dict of key value pairs.
@@ -319,23 +319,23 @@ class RequestsCookieJar(CookieJar, MutableMapping[str, str | None]):  # type: ig
 
         :rtype: bool
         """
-        domains = []
+        domains: list[str] = []
         for cookie in iter(self):
-            if cookie.domain is not None and cookie.domain in domains:
+            if cookie.domain is not None and cookie.domain in domains:  # type: ignore[reportUnnecessaryComparison]  # defensive check
                 return True
             domains.append(cookie.domain)
         return False  # there is only one domain in jar
 
     def get_dict(
         self, domain: str | None = None, path: str | None = None
-    ) -> dict[str, str]:
+    ) -> dict[str, str | None]:
         """Takes as an argument an optional domain and path and returns a plain
         old Python dict of name-value pairs of cookies that meet the
         requirements.
 
         :rtype: dict
         """
-        dictionary = {}
+        dictionary: dict[str, str | None] = {}
         for cookie in iter(self):
             if (domain is None or cookie.domain == domain) and (
                 path is None or cookie.path == path
@@ -470,7 +470,7 @@ class RequestsCookieJar(CookieJar, MutableMapping[str, str | None]):  # type: ig
         return self._policy
 
 
-def _copy_cookie_jar(jar: CookieJar | None) -> CookieJar | None:
+def _copy_cookie_jar(jar: CookieJar | None) -> CookieJar | None:  # type: ignore[reportUnusedFunction]  # cross-module usage in models.py
     if jar is None:
         return None
 
@@ -604,7 +604,7 @@ def merge_cookies(
     :param cookies: Dictionary or CookieJar object to be added.
     :rtype: CookieJar
     """
-    if not isinstance(cookiejar, cookielib.CookieJar):
+    if not isinstance(cookiejar, cookielib.CookieJar):  # type: ignore[reportUnnecessaryIsInstance]  # runtime guard
         raise ValueError("You can only merge into CookieJar")
 
     if isinstance(cookies, dict):
