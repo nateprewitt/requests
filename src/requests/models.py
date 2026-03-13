@@ -1101,14 +1101,15 @@ class Response:
 
         header = self.headers.get("link")
 
-        resolved_links = {}
+        resolved_links: dict[str, dict[str, str]] = {}
 
         if header:
             links = parse_header_links(header)
 
             for link in links:
                 key = link.get("rel") or link.get("url")
-                resolved_links[key] = link
+                if key is not None:
+                    resolved_links[key] = link
 
         return resolved_links
 
