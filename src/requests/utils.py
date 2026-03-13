@@ -1088,7 +1088,7 @@ def _validate_header_part(
 ) -> None:
     if isinstance(header_part, str):
         validator = _HEADER_VALIDATORS_STR[header_validator_index]
-    elif isinstance(header_part, bytes):
+    elif isinstance(header_part, bytes):  # type: ignore[reportUnnecessaryIsInstance]  # runtime guard for non-str/bytes
         validator = _HEADER_VALIDATORS_BYTE[header_validator_index]
     else:
         raise InvalidHeader(
