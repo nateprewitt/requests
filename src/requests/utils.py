@@ -37,10 +37,10 @@ from .__version__ import __version__
 
 # to_native_string is unused here, but imported here for backwards compatibility
 from ._internal_utils import (  # noqa: F401
-    _HEADER_VALIDATORS_BYTE,
-    _HEADER_VALIDATORS_STR,
-    HEADER_VALIDATORS,
-    to_native_string,
+    _HEADER_VALIDATORS_BYTE,  # type: ignore[reportPrivateUsage]
+    _HEADER_VALIDATORS_STR,  # type: ignore[reportPrivateUsage]
+    HEADER_VALIDATORS,  # type: ignore[reportUnusedImport]
+    to_native_string,  # type: ignore[reportUnusedImport]
 )
 from ._types import SupportsItems
 from .compat import (
