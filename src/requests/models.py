@@ -119,8 +119,10 @@ class RequestEncodingMixin:
     def path_url(self) -> str:
         """Build the path URL to use."""
 
-        url = []
+        url: list[str] = []
 
+        # url is guaranteed to be str after prepare() has been called
+        assert self.url is not None
         p = urlsplit(self.url)
 
         path = p.path
