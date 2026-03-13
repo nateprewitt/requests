@@ -25,6 +25,11 @@ class SupportsRead(Protocol[_T_co]):
     def read(self, length: int = ...) -> _T_co: ...
 
 
+@runtime_checkable
+class SupportsItems(Protocol):
+    def items(self) -> Iterable[tuple[Any, Any]]: ...
+
+
 if TYPE_CHECKING:
     from typing import TypeAlias
 
@@ -32,9 +37,6 @@ if TYPE_CHECKING:
     from .cookies import RequestsCookieJar
     from .models import PreparedRequest, Response
     from .structures import CaseInsensitiveDict
-
-    class SupportsItems(Protocol):
-        def items(self) -> Iterable[tuple[Any, Any]]: ...
 
     # Type aliases for core API concepts (ordered by request() signature)
     UriType: TypeAlias = str | bytes

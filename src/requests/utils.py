@@ -42,6 +42,7 @@ from ._internal_utils import (  # noqa: F401
     HEADER_VALIDATORS,
     to_native_string,
 )
+from ._types import SupportsItems
 from .compat import (
     Mapping,
     basestring,
@@ -386,8 +387,8 @@ def to_key_val_list(
     if isinstance(value, (str, bytes, bool, int)):
         raise ValueError("cannot encode objects that are not 2-tuples")
 
-    if isinstance(value, Mapping):
-        value = value.items()
+    if isinstance(value, SupportsItems):
+        return list(value.items())
 
     return list(value)
 
