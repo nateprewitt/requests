@@ -13,7 +13,7 @@ import datetime
 # Implicit import within threads may cause LookupError when standard library is in a ZIP,
 # such as in Embedded Python. See https://github.com/psf/requests/issues/3578.
 import encodings.idna  # noqa: F401
-from collections.abc import Callable, Iterable, Iterator, Mapping
+from collections.abc import Callable, Generator, Iterable, Iterator, Mapping
 from io import UnsupportedOperation
 from typing import (
     TYPE_CHECKING,
@@ -903,7 +903,7 @@ class Response:
         available encoding based on the response.
         """
 
-        def generate():
+        def generate() -> Generator[bytes, None, None]:
             # Special case for urllib3.
             if hasattr(self.raw, "stream"):
                 try:
@@ -979,6 +979,8 @@ class Response:
         ):
             if pending is not None:
                 chunk = pending + chunk  # type: ignore[operator]
+            # TODO: remove after iter_lines rewrite
+            assert isinstance(chunk, (str, bytes))
 
             if delimiter:
                 lines = chunk.split(delimiter)  # type: ignore[arg-type]
