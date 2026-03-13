@@ -417,7 +417,7 @@ def parse_list_header(value: str) -> list[str]:
     :return: :class:`list`
     :rtype: list
     """
-    result = []
+    result: list[str] = []
     for item in _parse_list_header(value):
         if item[:1] == item[-1:] == '"':
             item = unquote_header_value(item[1:-1])
@@ -448,7 +448,7 @@ def parse_dict_header(value: str) -> dict[str, str | None]:
     :return: :class:`dict`
     :rtype: dict
     """
-    result = {}
+    result: dict[str, str | None] = {}
     for item in _parse_list_header(value):
         if "=" not in item:
             result[item] = None
@@ -543,7 +543,7 @@ def _parse_content_type_header(header: str) -> tuple[str, dict[str, Any]]:
 
     tokens = header.split(";")
     content_type, params = tokens[0].strip(), tokens[1:]
-    params_dict = {}
+    params_dict: dict[str, str | bool] = {}
     items_to_strip = "\"' "
 
     for param in params:
@@ -643,7 +643,7 @@ def get_unicode_from_response(r: Response) -> str | bytes | None:
         DeprecationWarning,
     )
 
-    tried_encodings = []
+    tried_encodings: list[str] = []
 
     # Try charset from content-type
     encoding = get_encoding_from_headers(r.headers)
@@ -806,7 +806,7 @@ def should_bypass_proxies(url: UriType, no_proxy: str | None) -> bool:
 
     # Prioritize lowercase environment variables over uppercase
     # to keep a consistent behaviour with other http projects (curl, wget).
-    def get_proxy(key):
+    def get_proxy(key: str) -> str | None:
         return os.environ.get(key) or os.environ.get(key.upper())
 
     # First check whether no_proxy is defined. If it is, check that the URL
@@ -959,7 +959,7 @@ def parse_header_links(value: str) -> list[dict[str, str]]:
     :rtype: list
     """
 
-    links = []
+    links: list[dict[str, str]] = []
 
     replace_chars = " '\""
 
@@ -973,7 +973,7 @@ def parse_header_links(value: str) -> list[dict[str, str]]:
         except ValueError:
             url, params = val, ""
 
-        link = {"url": url.strip("<> '\"")}
+        link: dict[str, str] = {"url": url.strip("<> '\"")}
 
         for param in params.split(";"):
             try:
