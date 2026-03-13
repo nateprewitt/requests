@@ -181,6 +181,34 @@ from .models import PreparedRequest, Request, Response
 from .sessions import Session, session
 from .status_codes import codes
 
+__all__ = (
+    "ConnectionError",
+    "ConnectTimeout",
+    "HTTPError",
+    "JSONDecodeError",
+    "PreparedRequest",
+    "ReadTimeout",
+    "Request",
+    "RequestException",
+    "Response",
+    "Session",
+    "Timeout",
+    "TooManyRedirects",
+    "URLRequired",
+    "codes",
+    "delete",
+    "get",
+    "head",
+    "options",
+    "packages",
+    "patch",
+    "post",
+    "put",
+    "request",
+    "session",
+    "utils",
+)
+
 logging.getLogger(__name__).addHandler(NullHandler())
 
 # FileModeWarnings go off per the default.
