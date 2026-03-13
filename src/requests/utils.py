@@ -1033,7 +1033,7 @@ def prepend_scheme_if_needed(url: str, new_scheme: str) -> str:
     :rtype: str
     """
     parsed = parse_url(url)
-    scheme, auth, host, port, path, query, fragment = parsed
+    scheme, auth, host, port, path, query, fragment = parsed  # type: ignore[reportUnusedVariable]
 
     # A defect in urlparse determines that there isn't a netloc present in some
     # urls. We previously assumed parsing was overly cautious, and swapped the
@@ -1110,7 +1110,7 @@ def urldefragauth(url: UriType) -> str:
 
     :rtype: str
     """
-    scheme, netloc, path, params, query, fragment = urlparse(url)
+    scheme, netloc, path, params, query, fragment = urlparse(url)  # type: ignore[reportUnusedVariable]
 
     # see func:`prepend_scheme_if_needed`
     if not netloc:
