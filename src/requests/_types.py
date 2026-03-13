@@ -52,14 +52,20 @@ if TYPE_CHECKING:
         | None
     )
 
+    _KVDataType: TypeAlias = (
+        list[tuple[Any, Any]] | tuple[tuple[Any, Any], ...] | Mapping[Any, Any]
+    )
+
+    _EncodableDataType: TypeAlias = (
+        _KVDataType | str | bytes | SupportsRead[str | bytes]
+    )
+
     DataType: TypeAlias = (
-        Iterable[bytes | str]
+        _KVDataType
+        | Iterable[bytes | str]
         | str
         | bytes
         | SupportsRead[str | bytes]
-        | list[tuple[Any, Any]]
-        | tuple[tuple[Any, Any], ...]
-        | Mapping[Any, Any]
         | None
     )
 

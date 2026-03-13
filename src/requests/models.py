@@ -87,6 +87,7 @@ if TYPE_CHECKING:
         HooksInputType,
         HookType,
         JsonType,
+        _EncodableDataType,
     )
     from .adapters import HTTPAdapter
     from .cookies import RequestsCookieJar
@@ -131,7 +132,7 @@ class RequestEncodingMixin:
         return "".join(url)
 
     @staticmethod
-    def _encode_params(data: Any) -> str | bytes:
+    def _encode_params(data: _EncodableDataType) -> str | bytes | SupportsRead[str | bytes]:
         """Encode parameters in a piece of data.
 
         Will successfully encode parameters when passed as a dict or a list of
