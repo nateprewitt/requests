@@ -7,6 +7,8 @@ between Python 2 and Python 3. It remains for backwards
 compatibility until the next major version.
 """
 
+# pyright: reportUnusedImport=false
+
 from __future__ import annotations
 
 import importlib
