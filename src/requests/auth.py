@@ -204,7 +204,8 @@ class HTTPDigestAuth(AuthBase):
         if hash_utf8 is None:
             return None
 
-        KD = lambda s, d: hash_utf8(f"{s}:{d}")  # noqa:E731
+        def KD(s: str, d: str) -> str:
+            return hash_utf8(f"{s}:{d}")
 
         # XXX not implemented yet
         entdig = None
