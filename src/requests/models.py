@@ -884,14 +884,14 @@ class Response:
 
     @overload
     def iter_content(
-        self, chunk_size: int = 1, decode_unicode: Literal[False] = False
+        self, chunk_size: int | None = 1, decode_unicode: Literal[False] = False
     ) -> Iterator[bytes]: ...
     @overload
     def iter_content(
-        self, chunk_size: int = 1, *, decode_unicode: Literal[True]
+        self, chunk_size: int | None = 1, *, decode_unicode: Literal[True]
     ) -> Iterator[str | bytes]: ...
     def iter_content(
-        self, chunk_size: int = 1, decode_unicode: bool = False
+        self, chunk_size: int | None = 1, decode_unicode: bool = False
     ) -> Iterator[str | bytes]:
         """Iterates over the response data.  When stream=True is set on the
         request, this avoids reading the content at once into memory for
@@ -934,7 +934,7 @@ class Response:
 
         if self._content_consumed and isinstance(self._content, bool):
             raise StreamConsumedError()
-        elif chunk_size is not None and not isinstance(chunk_size, int):
+        elif chunk_size is not None and not isinstance(chunk_size, int):  # type: ignore[reportUnnecessaryIsInstance]  # runtime guard for untyped callers
             raise TypeError(
                 f"chunk_size must be an int, it is instead a {type(chunk_size)}."
             )
