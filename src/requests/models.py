@@ -34,8 +34,8 @@ from urllib3.filepost import encode_multipart_formdata
 from urllib3.util import parse_url
 
 from ._internal_utils import to_native_string, unicode_is_ascii
-from .auth import HTTPBasicAuth
 from ._types import SupportsRead
+from .auth import HTTPBasicAuth
 from .compat import (
     JSONDecodeError,
     basestring,
@@ -139,7 +139,9 @@ class RequestEncodingMixin:
         return "".join(url)
 
     @staticmethod
-    def _encode_params(data: EncodableDataType) -> str | bytes | SupportsRead[str | bytes]:
+    def _encode_params(
+        data: EncodableDataType,
+    ) -> str | bytes | SupportsRead[str | bytes]:
         """Encode parameters in a piece of data.
 
         Will successfully encode parameters when passed as a dict or a list of
@@ -169,7 +171,9 @@ class RequestEncodingMixin:
             return data  # type: ignore[return-value]  # unreachable for valid DataType
 
     @staticmethod
-    def _encode_files(files: FilesType, data: KVDataType | str | bytes | None) -> tuple[bytes, str]:
+    def _encode_files(
+        files: FilesType, data: KVDataType | str | bytes | None
+    ) -> tuple[bytes, str]:
         """Build the body for a multipart/form-data request.
 
         Will successfully encode files when passed as a dict or a list of

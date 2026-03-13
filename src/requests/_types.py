@@ -56,9 +56,7 @@ if TYPE_CHECKING:
         list[tuple[Any, Any]] | tuple[tuple[Any, Any], ...] | Mapping[Any, Any]
     )
 
-    EncodableDataType: TypeAlias = (
-        KVDataType | str | bytes | SupportsRead[str | bytes]
-    )
+    EncodableDataType: TypeAlias = KVDataType | str | bytes | SupportsRead[str | bytes]
 
     DataType: TypeAlias = (
         KVDataType
