@@ -523,7 +523,11 @@ class PreparedRequest(RequestEncodingMixin, RequestHooksMixin):
         if isinstance(params, (str, bytes)):
             params = to_native_string(params)
 
-        enc_params = self._encode_params(params)
+        if params is not None:
+            enc_params = self._encode_params(params)
+        else:
+            enc_params = ""
+
         if enc_params:
             if query:
                 query = f"{query}&{enc_params}"
@@ -605,7 +609,7 @@ class PreparedRequest(RequestEncodingMixin, RequestHooksMixin):
                 (body, content_type) = self._encode_files(files, data)
             else:
                 if data:
-                    body = self._encode_params(data)
+                    body = self._encode_params(data)  # type: ignore[arg-type]  # is_stream filters non-encodable iterables
                     if isinstance(data, basestring) or hasattr(data, "read"):
                         content_type = None
                     else:
