@@ -222,7 +222,7 @@ class RequestEncodingMixin:
 
             if isinstance(fp, (str, bytes, bytearray)):
                 fdata = fp
-            elif hasattr(fp, "read"):
+            elif isinstance(fp, SupportsRead):  # type: ignore[reportUnnecessaryIsInstance]  # defensive check for untyped callers
                 fdata = fp.read()
             elif fp is None:  # type: ignore[reportUnnecessaryComparison]  # defensive check for untyped callers
                 continue
@@ -617,7 +617,7 @@ class PreparedRequest(RequestEncodingMixin, RequestHooksMixin):
             else:
                 if data:
                     body = self._encode_params(data)  # type: ignore[arg-type]  # is_stream filters non-encodable iterables
-                    if isinstance(data, basestring) or hasattr(data, "read"):
+                    if isinstance(data, basestring) or isinstance(data, SupportsRead):
                         content_type = None
                     else:
                         content_type = "application/x-www-form-urlencoded"
