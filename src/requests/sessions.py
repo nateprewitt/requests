@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING, Any
 
 from ._internal_utils import to_native_string
 from .adapters import HTTPAdapter
-from .auth import _basic_auth_str
+from .auth import _basic_auth_str  # type: ignore[reportPrivateUsage]
 from .compat import cookielib, urljoin, urlparse
 from .cookies import (
     RequestsCookieJar,
@@ -37,7 +37,7 @@ from .hooks import default_hooks, dispatch_hook
 # formerly defined here, reexposed here for backward compatibility
 from .models import (  # noqa: F401
     DEFAULT_REDIRECT_LIMIT,
-    REDIRECT_STATI,
+    REDIRECT_STATI,  # type: ignore[reportUnusedImport]
     PreparedRequest,
     Request,
     Response,
@@ -53,7 +53,7 @@ from .utils import (  # noqa: F401
     requote_uri,
     resolve_proxies,
     rewind_body,
-    should_bypass_proxies,
+    should_bypass_proxies,  # type: ignore[reportUnusedImport]  # re-export for external consumers
     to_key_val_list,
 )
 
@@ -100,8 +100,8 @@ def merge_setting(
     ):
         return request_setting
 
-    merged_setting = dict_class(to_key_val_list(session_setting))
-    merged_setting.update(to_key_val_list(request_setting))
+    merged_setting = dict_class(to_key_val_list(session_setting))  # type: ignore[arg-type]  # isinstance narrows Any to Mapping[Unknown]
+    merged_setting.update(to_key_val_list(request_setting))  # type: ignore[arg-type]
 
     # Remove keys that are set to None. Extract keys first to avoid altering
     # the dictionary during iteration.
@@ -202,7 +202,7 @@ class SessionRedirectMixin:
     ) -> Generator[Response, None, None]:
         """Receives a Response. Returns a generator of Responses or Requests."""
 
-        hist = []  # keep track of history
+        hist: list[Response] = []  # keep track of history
 
         url = self.get_redirect_target(resp)
         previous_fragment = urlparse(req.url).fragment
@@ -269,10 +269,10 @@ class SessionRedirectMixin:
             # Extract any cookies sent on the response to the cookiejar
             # in the new request. Because we've mutated our copied prepared
             # request, use the old one that we haven't yet touched.
-            assert prepared_request._cookies is not None
-            extract_cookies_to_jar(prepared_request._cookies, req, resp.raw)
-            merge_cookies(prepared_request._cookies, self.cookies)
-            prepared_request.prepare_cookies(prepared_request._cookies)
+            assert prepared_request._cookies is not None  # type: ignore[reportPrivateUsage]
+            extract_cookies_to_jar(prepared_request._cookies, req, resp.raw)  # type: ignore[reportPrivateUsage]
+            merge_cookies(prepared_request._cookies, self.cookies)  # type: ignore[reportPrivateUsage]
+            prepared_request.prepare_cookies(prepared_request._cookies)  # type: ignore[reportPrivateUsage]
 
             # Rebuild auth and proxy information.
             proxies = self.rebuild_proxies(prepared_request, proxies)
@@ -281,7 +281,7 @@ class SessionRedirectMixin:
             # A failed tell() sets `_body_position` to `object()`. This non-None
             # value ensures `rewindable` will be True, allowing us to raise an
             # UnrewindableBodyError, instead of hanging the connection.
-            rewindable = prepared_request._body_position is not None and (
+            rewindable = prepared_request._body_position is not None and (  # type: ignore[reportPrivateUsage]
                 "Content-Length" in headers or "Transfer-Encoding" in headers
             )
 
