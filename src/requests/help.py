@@ -1,5 +1,7 @@
 """Module containing bug report helper(s)."""
 
+# pyright: reportUnknownMemberType=false
+
 import json
 import platform
 import ssl
@@ -79,7 +81,7 @@ def info():
     implementation_info = _implementation()
     urllib3_info = {"version": urllib3.__version__}  # type: ignore[reportPrivateImportUsage]
     charset_normalizer_info = {"version": None}
-    chardet_info = {"version": None}
+    chardet_info: dict[str, str | None] = {"version": None}
     if charset_normalizer:
         charset_normalizer_info = {"version": charset_normalizer.__version__}
     if chardet:
@@ -102,7 +104,7 @@ def info():
     }
 
     system_ssl = ssl.OPENSSL_VERSION_NUMBER
-    system_ssl_info = {"version": f"{system_ssl:x}" if system_ssl is not None else ""}
+    system_ssl_info = {"version": f"{system_ssl:x}" if system_ssl is not None else ""}  # type: ignore[reportUnnecessaryComparison]
 
     return {
         "platform": platform_info,
