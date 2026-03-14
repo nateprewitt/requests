@@ -57,7 +57,11 @@ except ImportError:
     chardet_version = None
 
 
-def check_compatibility(urllib3_version: str, chardet_version: str | None, charset_normalizer_version: str | None) -> None:
+def check_compatibility(
+    urllib3_version: str,
+    chardet_version: str | None,
+    charset_normalizer_version: str | None,
+) -> None:
     urllib3_version_list = urllib3_version.split(".")
     assert urllib3_version_list != ["dev"]  # Verify urllib3 isn't installed from git.
 
@@ -100,9 +104,7 @@ def _check_cryptography(cryptography_version: str) -> None:
         return
 
     if cryptography_version_list < [1, 3, 4]:
-        warning = (
-            f"Old version of cryptography ({cryptography_version_list}) may cause slowdown."
-        )
+        warning = f"Old version of cryptography ({cryptography_version_list}) may cause slowdown."
         warnings.warn(warning, RequestsDependencyWarning)
 
 
@@ -136,7 +138,9 @@ try:
         pyopenssl.inject_into_urllib3()
 
         # Check cryptography version
-        from cryptography import __version__ as cryptography_version  # type: ignore[import-not-found]
+        from cryptography import (
+            __version__ as cryptography_version,  # type: ignore[import-not-found]
+        )
 
         _check_cryptography(cryptography_version)
 except ImportError:
