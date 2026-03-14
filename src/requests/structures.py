@@ -68,7 +68,7 @@ class CaseInsensitiveDict(MutableMapping[str, _VT], Generic[_VT]):
         del self._store[key.lower()]
 
     def __iter__(self) -> Iterator[str]:
-        return (casedkey for casedkey, mappedvalue in self._store.values())
+        return (casedkey for casedkey, _ in self._store.values())
 
     def __len__(self) -> int:
         return len(self._store)
@@ -79,11 +79,11 @@ class CaseInsensitiveDict(MutableMapping[str, _VT], Generic[_VT]):
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, Mapping):
-            other = CaseInsensitiveDict(other)
+            other_dict: CaseInsensitiveDict[Any] = CaseInsensitiveDict(other)  # type: ignore[reportUnknownArgumentType]
         else:
             return NotImplemented
         # Compare insensitively
-        return dict(self.lower_items()) == dict(other.lower_items())
+        return dict(self.lower_items()) == dict(other_dict.lower_items())
 
     # Copy is required
     def copy(self) -> CaseInsensitiveDict[_VT]:
