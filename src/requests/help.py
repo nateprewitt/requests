@@ -6,6 +6,7 @@ import json
 import platform
 import ssl
 import sys
+from typing import Any
 
 import idna
 import urllib3
@@ -65,7 +66,7 @@ def _implementation():
     return {"name": implementation, "version": implementation_version}
 
 
-def info():
+def info() -> dict[str, Any]:
     """Generate information for a bug report."""
     try:
         platform_info = {
@@ -87,7 +88,7 @@ def info():
     if chardet:
         chardet_info = {"version": chardet.__version__}
 
-    pyopenssl_info = {
+    pyopenssl_info: dict[str, str | None] = {
         "version": None,
         "openssl_version": "",
     }
