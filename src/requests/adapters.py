@@ -9,7 +9,7 @@ and maintain connections.
 from __future__ import annotations
 
 import os.path
-import socket  # noqa: F401
+import socket  # noqa: F401  # type: ignore[reportUnusedImport]
 import typing
 import warnings
 from collections.abc import MutableMapping
@@ -34,7 +34,7 @@ from urllib3.util import Timeout as TimeoutSauce
 from urllib3.util import parse_url
 from urllib3.util.retry import Retry
 
-from .auth import _basic_auth_str
+from .auth import _basic_auth_str  # type: ignore[reportPrivateUsage]
 from .compat import basestring, urlparse
 from .cookies import extract_cookies_to_jar
 from .exceptions import (
@@ -65,7 +65,7 @@ try:
     from urllib3.contrib.socks import SOCKSProxyManager  # type: ignore[assignment]
 except ImportError:
 
-    def SOCKSProxyManager(*args, **kwargs):
+    def SOCKSProxyManager(*args: Any, **kwargs: Any) -> None:
         raise InvalidSchema("Missing dependencies for SOCKS support.")
 
 
@@ -89,8 +89,8 @@ def _urllib3_request_context(
     client_cert: tuple[str, str] | str | None,
     poolmanager: PoolManager,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
-    host_params = {}
-    pool_kwargs = {}
+    host_params: dict[str, Any] = {}
+    pool_kwargs: dict[str, Any] = {}
     parsed_request_url = urlparse(request.url)
     scheme = parsed_request_url.scheme.lower()
     port = parsed_request_url.port
@@ -621,7 +621,7 @@ class HTTPAdapter(BaseAdapter):
         :param proxy: The url of the proxy being used for this request.
         :rtype: dict
         """
-        headers = {}
+        headers: dict[str, str] = {}
         username, password = get_auth_from_url(proxy)
 
         if username:
