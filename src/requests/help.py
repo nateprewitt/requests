@@ -29,7 +29,7 @@ except ImportError:
     OpenSSL = None
     cryptography = None
 else:
-    import cryptography
+    import cryptography  # type: ignore[import-not-found]
     import OpenSSL  # type: ignore[import-not-found]
 
 
