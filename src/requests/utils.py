@@ -1127,8 +1127,8 @@ def rewind_body(prepared_request: PreparedRequest) -> None:
     """
     body_seek = getattr(prepared_request.body, "seek", None)
     if body_seek is not None and isinstance(
-        prepared_request._body_position,
-        integer_types,  # type: ignore[reportPrivateUsage]
+        prepared_request._body_position,  # type: ignore[reportPrivateUsage]
+        integer_types,
     ):
         try:
             body_seek(prepared_request._body_position)  # type: ignore[reportPrivateUsage]
