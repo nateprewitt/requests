@@ -113,7 +113,7 @@ def _init():
             if not title.startswith(("\\", "/")):
                 setattr(codes, title.upper(), code)
 
-    def doc(code):
+    def doc(code: int) -> str:
         names = ", ".join(f"``{n}``" for n in _codes[code])
         return "* %d: %s" % (code, names)
 
