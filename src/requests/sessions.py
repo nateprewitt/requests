@@ -57,6 +57,8 @@ from .utils import (  # noqa: F401
     to_key_val_list,
 )
 
+from ._types import is_prepared
+
 if TYPE_CHECKING:
     from http.cookiejar import CookieJar
 

@@ -33,10 +33,24 @@ class SupportsItems(Protocol):
 if TYPE_CHECKING:
     from typing import TypeAlias
 
+    from typing_extensions import TypeIs  # move to typing when Python >= 3.13
+
     from .auth import AuthBase
     from .cookies import RequestsCookieJar
     from .models import PreparedRequest, Response
     from .structures import CaseInsensitiveDict
+
+    class _ValidatedRequest(PreparedRequest):
+        """Subtype asserting a PreparedRequest has been fully prepared before calling.
+
+        The override suppression is required because mutable attribute types are
+        invariant (Liskov), but we only narrow after preparation is complete. This
+        is the explicit contract for Requests but Python's typing doesn't have a
+        better way to represent the requirement.
+        """
+
+        url: str  # type: ignore[reportIncompatibleVariableOverride]
+        method: str  # type: ignore[reportIncompatibleVariableOverride]
 
     # Type aliases for core API concepts (ordered by request() signature)
     UriType: TypeAlias = str | bytes
@@ -111,3 +125,8 @@ if TYPE_CHECKING:
 
 HookType = Callable[["Response"], Any]
 HooksInputType = Mapping[str, "Iterable[HookType] | HookType"]
+
+
+def is_prepared(request: PreparedRequest) -> TypeIs[_ValidatedRequest]:
+    """Verify a PreparedRequest has been fully prepared."""
+    return request.url is not None and request.method is not None

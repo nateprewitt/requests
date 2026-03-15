@@ -76,6 +76,8 @@ if typing.TYPE_CHECKING:
     from ._types import CertType, TimeoutType, VerifyType
     from .models import PreparedRequest
 
+from ._types import is_prepared
+
 
 DEFAULT_POOLBLOCK = False
 DEFAULT_POOLSIZE = 10
@@ -478,7 +480,9 @@ class HTTPAdapter(BaseAdapter):
         :rtype:
             urllib3.ConnectionPool
         """
-        proxy = select_proxy(request.url or "", proxies)
+        assert is_prepared(request)
+
+        proxy = select_proxy(request.url, proxies)
         try:
             host_params, pool_kwargs = self.build_connection_pool_key_attributes(
                 request,
@@ -576,7 +580,9 @@ class HTTPAdapter(BaseAdapter):
         :param proxies: A dictionary of schemes or schemes and hosts to proxy URLs.
         :rtype: str
         """
-        proxy = select_proxy(request.url or "", proxies)
+        assert is_prepared(request)
+
+        proxy = select_proxy(request.url, proxies)
         scheme = urlparse(request.url).scheme
 
         is_proxied_http_request = proxy and scheme != "https"
@@ -653,6 +659,8 @@ class HTTPAdapter(BaseAdapter):
         :param proxies: (optional) The proxies dictionary to apply to the request.
         :rtype: requests.Response
         """
+
+        assert is_prepared(request)
 
         try:
             conn = self.get_connection_with_tls_context(
