@@ -596,7 +596,7 @@ class HTTPAdapter(BaseAdapter):
             url = f"/{url.lstrip('/')}"
 
         if is_proxied_http_request and not using_socks_proxy:
-            url = urldefragauth(request.url or "")
+            url = urldefragauth(request.url)
 
         return url
 
@@ -669,7 +669,7 @@ class HTTPAdapter(BaseAdapter):
         except LocationValueError as e:
             raise InvalidURL(e, request=request)
 
-        self.cert_verify(conn, request.url or "", verify, cert)
+        self.cert_verify(conn, request.url, verify, cert)
         url = self.request_url(request, proxies)
         self.add_headers(
             request,

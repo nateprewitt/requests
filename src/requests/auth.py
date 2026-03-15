@@ -303,7 +303,9 @@ class HTTPDigestAuth(AuthBase):
             extract_cookies_to_jar(prep._cookies, r.request, r.raw)  # type: ignore[reportPrivateUsage]
             prep.prepare_cookies(prep._cookies)  # type: ignore[reportPrivateUsage]
 
-            _digest_auth = self.build_digest_header(prep.method or "", prep.url or "")
+            assert prep.method is not None
+            assert prep.url is not None
+            _digest_auth = self.build_digest_header(prep.method, prep.url)
             if _digest_auth:
                 prep.headers["Authorization"] = _digest_auth
             assert r.connection is not None
@@ -321,7 +323,9 @@ class HTTPDigestAuth(AuthBase):
         self.init_per_thread_state()
         # If we have a saved nonce, skip the 401
         if self._thread_local.last_nonce:
-            _digest_auth = self.build_digest_header(r.method or "", r.url or "")
+            assert r.method is not None
+            assert r.url is not None
+            _digest_auth = self.build_digest_header(r.method, r.url)
             if _digest_auth:
                 r.headers["Authorization"] = _digest_auth
         if (tell := getattr(r.body, "tell", None)) is not None:

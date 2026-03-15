@@ -246,7 +246,8 @@ class SessionRedirectMixin:
             # (e.g. '/path/to/resource' instead of 'http://domain.tld/path/to/resource')
             # Compliant with RFC3986, we percent encode the url.
             if not parsed.netloc:
-                url = urljoin(resp.url or "", requote_uri(url))
+                assert resp.url is not None
+                url = urljoin(resp.url, requote_uri(url))
             else:
                 url = requote_uri(url)
 
@@ -324,16 +325,18 @@ class SessionRedirectMixin:
         headers = prepared_request.headers
         url = prepared_request.url
         assert response.request is not None
+        assert response.request.url is not None
+        assert url is not None
 
         if "Authorization" in headers and self.should_strip_auth(
-            response.request.url or "", url or ""
+            response.request.url, url
         ):
             # If we get redirected to a new host, we should strip out any
             # authentication headers.
             del headers["Authorization"]
 
         # .netrc might have more auth for us on our new host.
-        new_auth = get_netrc_auth(url or "") if self.trust_env else None
+        new_auth = get_netrc_auth(url) if self.trust_env else None
         if new_auth is not None:
             prepared_request.prepare_auth(new_auth)
 
@@ -523,6 +526,9 @@ class Session(SessionRedirectMixin):
             session's settings.
         :rtype: requests.PreparedRequest
         """
+        assert request.url is not None
+        assert request.method is not None
+
         cookies = request.cookies or {}
 
         # Bootstrap CookieJar.
@@ -537,11 +543,11 @@ class Session(SessionRedirectMixin):
         # Set environment's basic authentication if not explicitly set.
         auth = request.auth
         if self.trust_env and not auth and not self.auth:
-            auth = get_netrc_auth(request.url or "")
+            auth = get_netrc_auth(request.url)
 
         p = PreparedRequest()
         p.prepare(
-            method=(request.method or "").upper(),
+            method=request.method.upper(),
             url=request.url,
             files=request.files,
             data=request.data,
@@ -633,10 +639,12 @@ class Session(SessionRedirectMixin):
         )
         prep = self.prepare_request(req)
 
+        assert is_prepared(prep)
+
         proxies = proxies or {}
 
         settings = self.merge_environment_settings(
-            prep.url or "", proxies, stream, verify, cert
+            prep.url, proxies, stream, verify, cert
         )
 
         # Send the request.
@@ -749,13 +757,15 @@ class Session(SessionRedirectMixin):
         if isinstance(request, Request):
             raise ValueError("You can only send PreparedRequests.")
 
+        assert is_prepared(request)
+
         # Set up variables needed for resolve_redirects and dispatching of hooks
         allow_redirects = kwargs.pop("allow_redirects", True)
         stream = kwargs.get("stream")
         hooks = request.hooks
 
         # Get the appropriate adapter to use
-        adapter = self.get_adapter(url=request.url or "")
+        adapter = self.get_adapter(url=request.url)
 
         # Start time (approximately) of the request
         start = preferred_clock()

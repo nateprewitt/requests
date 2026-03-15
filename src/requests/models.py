@@ -424,11 +424,12 @@ class PreparedRequest(RequestEncodingMixin, RequestHooksMixin):
         """Prepares the entire request with the given parameters."""
 
         self.prepare_method(method)
+        assert url is not None
         self.prepare_url(url, params)
         self.prepare_headers(headers)
         self.prepare_cookies(cookies)
         self.prepare_body(data, files, json)
-        self.prepare_auth(auth, url or "")
+        self.prepare_auth(auth, url)
 
         # Note that prepare_auth must be last to enable authentication schemes
         # such as OAuth to work on a fully prepared request.
@@ -659,7 +660,8 @@ class PreparedRequest(RequestEncodingMixin, RequestHooksMixin):
 
         # If no Auth is explicitly provided, extract it from the URL first.
         if auth is None:
-            url_auth = get_auth_from_url(self.url or "")
+            assert self.url is not None
+            url_auth = get_auth_from_url(self.url)
             auth = url_auth if any(url_auth) else None
 
         if auth:
