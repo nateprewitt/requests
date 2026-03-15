@@ -64,6 +64,7 @@ test = [
 ]
 typecheck = [
     "pyright",
+    "typing_extensions",
 ]
 
 [tool.setuptools]

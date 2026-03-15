@@ -468,7 +468,7 @@ class PreparedRequest(RequestEncodingMixin, RequestHooksMixin):
 
     def prepare_url(
         self,
-        url: str | None,
+        url: str,
         params: dict[str, Any] | list[tuple[str, str]] | bytes | str | None,
     ) -> None:
         """Prepares the given HTTP URL."""
