@@ -2,8 +2,9 @@
 requests._types
 ~~~~~~~~~~~~~~~
 
-This module contains type aliases used throughout the Requests library.
-These types are for internal use and type checking purposes.
+This module contains type aliases used internally by the Requests library.
+These types are not part of the public API and must not be relied upon
+by external code.
 """
 
 from __future__ import annotations
