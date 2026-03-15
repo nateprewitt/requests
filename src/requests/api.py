@@ -110,7 +110,9 @@ def head(url: str, **kwargs: Any) -> Response:
     return request("head", url, **kwargs)
 
 
-def post(url: str, data: DataType = None, json: JsonType = None, **kwargs: Any) -> Response:
+def post(
+    url: str, data: DataType = None, json: JsonType = None, **kwargs: Any
+) -> Response:
     r"""Sends a POST request.
 
     :param url: URL for the new :class:`Request` object.

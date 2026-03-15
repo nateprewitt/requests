@@ -17,6 +17,7 @@ from datetime import timedelta
 from typing import TYPE_CHECKING, Any
 
 from ._internal_utils import to_native_string
+from ._types import is_prepared
 from .adapters import HTTPAdapter
 from .auth import _basic_auth_str  # type: ignore[reportPrivateUsage]
 from .compat import cookielib, urljoin, urlparse
@@ -56,8 +57,6 @@ from .utils import (  # noqa: F401
     should_bypass_proxies,  # type: ignore[reportUnusedImport]  # re-export for external consumers
     to_key_val_list,
 )
-
-from ._types import is_prepared
 
 if TYPE_CHECKING:
     from http.cookiejar import CookieJar

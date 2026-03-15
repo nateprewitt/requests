@@ -78,7 +78,6 @@ if typing.TYPE_CHECKING:
 
 from ._types import is_prepared
 
-
 DEFAULT_POOLBLOCK = False
 DEFAULT_POOLSIZE = 10
 DEFAULT_RETRIES = 0
