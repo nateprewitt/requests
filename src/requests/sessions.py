@@ -631,9 +631,9 @@ class Session(SessionRedirectMixin):
             url=url,
             headers=headers,
             files=files,
-            data=data or {},
+            data=data,
             json=json,
-            params=params or {},  # type: ignore[arg-type]  # TODO(typing): MutableMapping vs dict
+            params=params,
             auth=auth,
             cookies=cookies,
             hooks=hooks,
