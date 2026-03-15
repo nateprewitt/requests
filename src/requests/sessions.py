@@ -785,8 +785,8 @@ class Session(SessionRedirectMixin):
         if r.history:
             # If the hooks create history then we want those cookies too
             for resp in r.history:
-                if resp.request is not None:
-                    extract_cookies_to_jar(self.cookies, resp.request, resp.raw)
+                assert resp.request is not None
+                extract_cookies_to_jar(self.cookies, resp.request, resp.raw)
 
         extract_cookies_to_jar(self.cookies, request, r.raw)
 
