@@ -124,11 +124,11 @@ class HTTPDigestAuth(AuthBase):
     username: bytes | str
     password: bytes | str
     _thread_local: threading.local
-    last_nonce: Any
-    nonce_count: Any
-    chal: Any
-    pos: Any
-    num_401_calls: Any
+    last_nonce: str
+    nonce_count: int
+    chal: dict[str, str]
+    pos: int | None
+    num_401_calls: int | None
 
     @overload
     def __init__(self, username: str, password: str) -> None: ...
