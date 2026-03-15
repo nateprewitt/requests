@@ -93,6 +93,7 @@ if TYPE_CHECKING:
         HookType,
         JsonType,
         KVDataType,
+        ParamsType,
     )
     from .adapters import HTTPAdapter
     from .cookies import RequestsCookieJar
@@ -302,7 +303,7 @@ class Request(RequestHooksMixin):
     files: FilesType
     data: DataType
     json: JsonType
-    params: dict[str, Any] | list[tuple[str, str]] | bytes | str | None
+    params: ParamsType
     auth: AuthType
     cookies: RequestsCookieJar | CookieJar | dict[str, str] | None
 
@@ -313,7 +314,7 @@ class Request(RequestHooksMixin):
         headers: Mapping[str, str | bytes] | None = None,
         files: FilesType = None,
         data: DataType = None,
-        params: dict[str, Any] | list[tuple[str, str]] | bytes | str | None = None,
+        params: ParamsType = None,
         auth: AuthType = None,
         cookies: RequestsCookieJar | CookieJar | dict[str, str] | None = None,
         hooks: HooksInputType | None = None,
@@ -415,7 +416,7 @@ class PreparedRequest(RequestEncodingMixin, RequestHooksMixin):
         headers: Mapping[str, str | bytes] | None = None,
         files: FilesType = None,
         data: DataType = None,
-        params: dict[str, Any] | list[tuple[str, str]] | bytes | str | None = None,
+        params: ParamsType = None,
         auth: AuthType = None,
         cookies: RequestsCookieJar | CookieJar | dict[str, str] | None = None,
         hooks: HooksInputType | None = None,
@@ -470,7 +471,7 @@ class PreparedRequest(RequestEncodingMixin, RequestHooksMixin):
     def prepare_url(
         self,
         url: str,
-        params: dict[str, Any] | list[tuple[str, str]] | bytes | str | None,
+        params: ParamsType,
     ) -> None:
         """Prepares the given HTTP URL."""
         #: Accept objects that have string representations.

@@ -71,7 +71,7 @@ if TYPE_CHECKING:
         str | bytes | int | float | Iterable[str | bytes | int | float] | None
     )
     ParamsType: TypeAlias = (
-        SupportsItems
+        Mapping[_ParamsMappingKeyType, _ParamsMappingValueType]
         | tuple[tuple[_ParamsMappingKeyType, _ParamsMappingValueType], ...]
         | Iterable[tuple[_ParamsMappingKeyType, _ParamsMappingValueType]]
         | str
@@ -80,7 +80,7 @@ if TYPE_CHECKING:
     )
 
     KVDataType: TypeAlias = (
-        list[tuple[Any, Any]] | tuple[tuple[Any, Any], ...] | Mapping[Any, Any]
+        Iterable[tuple[Any, Any]] | Mapping[Any, Any]
     )
 
     EncodableDataType: TypeAlias = KVDataType | str | bytes | SupportsRead[str | bytes]
