@@ -69,6 +69,7 @@ if TYPE_CHECKING:
         FilesType,
         HooksType,
         HookType,
+        JsonType,
         ParamsType,
         TimeoutType,
         VerifyType,
@@ -579,7 +580,7 @@ class Session(SessionRedirectMixin):
         stream: bool | None = None,
         verify: VerifyType | None = None,
         cert: CertType = None,
-        json: Any = None,
+        json: JsonType = None,
     ) -> Response:
         """Constructs a :class:`Request <Request>`, prepares it and sends it.
         Returns :class:`Response <Response>` object.
@@ -691,7 +692,7 @@ class Session(SessionRedirectMixin):
         return self.request("HEAD", url, **kwargs)
 
     def post(
-        self, url: str, data: DataType = None, json: Any = None, **kwargs: Any
+        self, url: str, data: DataType = None, json: JsonType = None, **kwargs: Any
     ) -> Response:
         r"""Sends a POST request. Returns :class:`Response` object.
 

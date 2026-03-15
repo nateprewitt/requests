@@ -10,13 +10,15 @@ This module implements the Requests API.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from . import sessions
 from .models import Response
 
 if TYPE_CHECKING:
-    from ._types import DataType, ParamsType
+    from typing import Any
+
+    from ._types import DataType, JsonType, ParamsType
 
 
 def request(method: str, url: str, **kwargs: Any) -> Response:
@@ -108,7 +110,7 @@ def head(url: str, **kwargs: Any) -> Response:
     return request("head", url, **kwargs)
 
 
-def post(url: str, data: DataType = None, json: Any = None, **kwargs: Any) -> Response:
+def post(url: str, data: DataType = None, json: JsonType = None, **kwargs: Any) -> Response:
     r"""Sends a POST request.
 
     :param url: URL for the new :class:`Request` object.
