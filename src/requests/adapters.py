@@ -70,7 +70,7 @@ except ImportError:
 
 
 if typing.TYPE_CHECKING:
-    from urllib3.connectionpool import ConnectionPool
+    from urllib3.connectionpool import HTTPConnectionPool
     from urllib3.poolmanager import PoolManager as _PoolManager
 
     from ._types import CertType, TimeoutType, VerifyType
@@ -460,7 +460,7 @@ class HTTPAdapter(BaseAdapter):
         verify: VerifyType,
         proxies: MutableMapping[str, str] | None = None,
         cert: CertType = None,
-    ) -> ConnectionPool:
+    ) -> HTTPConnectionPool:
         """Returns a urllib3 connection for the given request and TLS settings.
         This should not be called from user code, and is only exposed for use
         when subclassing the :class:`HTTPAdapter <requests.adapters.HTTPAdapter>`.
@@ -478,7 +478,7 @@ class HTTPAdapter(BaseAdapter):
             (optional) Any user-provided SSL certificate to be used for client
             authentication (a.k.a., mTLS).
         :rtype:
-            urllib3.ConnectionPool
+            urllib3.HTTPConnectionPool
         """
         assert is_prepared(request)
 
@@ -513,7 +513,7 @@ class HTTPAdapter(BaseAdapter):
 
     def get_connection(
         self, url: str, proxies: MutableMapping[str, str] | None = None
-    ) -> ConnectionPool:
+    ) -> HTTPConnectionPool:
         """DEPRECATED: Users should move to `get_connection_with_tls_context`
         for all subclasses of HTTPAdapter using Requests>=2.32.2.
 
@@ -523,7 +523,7 @@ class HTTPAdapter(BaseAdapter):
 
         :param url: The URL to connect to.
         :param proxies: (optional) A Requests-style dictionary of proxies used on this request.
-        :rtype: urllib3.ConnectionPool
+        :rtype: urllib3.HTTPConnectionPool
         """
         warnings.warn(
             (
@@ -697,10 +697,10 @@ class HTTPAdapter(BaseAdapter):
             resolved_timeout = TimeoutSauce(connect=timeout, read=timeout)
 
         try:
-            resp = conn.urlopen(  # type: ignore[union-attr]
+            resp = conn.urlopen(
                 method=request.method,
                 url=url,
-                body=request.body,
+                body=request.body,  # type: ignore[arg-type]  # urllib3 stubs don't accept Iterable[bytes | str]
                 headers=request.headers,
                 redirect=False,
                 assert_same_host=False,
