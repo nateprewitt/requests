@@ -26,7 +26,6 @@ from typing import (
     Any,
     AnyStr,
     TypeVar,
-    cast,
     overload,
 )
 
@@ -151,10 +150,10 @@ def dict_to_sequence(
 ) -> Iterable[tuple[Any, Any]]:
     """Returns an internal sequence dictionary update."""
 
-    if (items := getattr(d, "items", None)) is not None:
-        return items()
+    if isinstance(d, SupportsItems):
+        return d.items()
 
-    return cast(Iterable[tuple[Any, Any]], d)
+    return d
 
 
 def super_len(o: Any) -> int:
