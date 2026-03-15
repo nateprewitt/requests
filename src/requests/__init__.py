@@ -138,11 +138,11 @@ try:
         pyopenssl.inject_into_urllib3()
 
         # Check cryptography version
-        from cryptography import (  # type: ignore[import-not-found]
-            __version__ as cryptography_version,
+        from cryptography import (  # type: ignore[reportMissingImports]
+            __version__ as cryptography_version,  # type: ignore[reportUnknownVariableType]
         )
 
-        _check_cryptography(cryptography_version)
+        _check_cryptography(cryptography_version)  # type: ignore[reportUnknownArgumentType]
 except ImportError:
     pass
 
