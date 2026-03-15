@@ -969,7 +969,8 @@ class Response:
     def iter_lines(
         self,
         chunk_size: int = ITER_CHUNK_SIZE,
-        decode_unicode: Literal[True] = ...,  # type: ignore[assignment]
+        *,
+        decode_unicode: Literal[True],
         delimiter: str | bytes | None = None,
     ) -> Iterator[str | bytes]: ...
     def iter_lines(
