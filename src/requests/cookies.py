@@ -417,7 +417,7 @@ class RequestsCookieJar(CookieJar, MutableMapping[str, str | None]):  # type: ig
 
     def _find_no_duplicates(
         self, name: str, domain: str | None = None, path: str | None = None
-    ) -> str | None:
+    ) -> str:
         """Both ``__get_item__`` and ``get`` call this function: it's never
         used elsewhere in Requests.
 
