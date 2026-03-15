@@ -328,7 +328,9 @@ def atomic_open(filename: str) -> Iterator[BufferedWriter]:
         raise
 
 
-def from_key_val_list(value: Any) -> dict[Any, Any] | None:
+def from_key_val_list(
+    value: Mapping[Any, Any] | Iterable[tuple[Any, Any]] | None,
+) -> dict[Any, Any] | None:
     """Take an object and test to see if it can be represented as a
     dictionary. Unless it can not be represented as such, return an
     OrderedDict, e.g.,
