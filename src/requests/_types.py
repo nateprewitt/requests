@@ -31,6 +31,16 @@ class SupportsItems(Protocol):
     def items(self) -> Iterable[tuple[Any, Any]]: ...
 
 
+# These are needed at runtime for default_hooks() return type
+HookType = Callable[["Response"], Any]
+HooksInputType = Mapping[str, "Iterable[HookType] | HookType"]
+
+
+def is_prepared(request: PreparedRequest) -> TypeIs[_ValidatedRequest]:
+    """Verify a PreparedRequest has been fully prepared."""
+    return request.url is not None and request.method is not None
+
+
 if TYPE_CHECKING:
     from typing import TypeAlias
 
@@ -120,14 +130,3 @@ if TYPE_CHECKING:
     JsonType: TypeAlias = (
         None | bool | int | float | str | list["JsonType"] | dict[str, "JsonType"]
     )
-
-
-# These are needed at runtime for default_hooks() return type
-
-HookType = Callable[["Response"], Any]
-HooksInputType = Mapping[str, "Iterable[HookType] | HookType"]
-
-
-def is_prepared(request: PreparedRequest) -> TypeIs[_ValidatedRequest]:
-    """Verify a PreparedRequest has been fully prepared."""
-    return request.url is not None and request.method is not None
