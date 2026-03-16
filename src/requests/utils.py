@@ -870,7 +870,7 @@ def get_environ_proxies(url: UriType, no_proxy: str | None = None) -> dict[str, 
         return getproxies()
 
 
-def select_proxy(url: str, proxies: MutableMapping[str, str] | None) -> str | None:
+def select_proxy(url: str, proxies: dict[str, str] | None) -> str | None:
     """Select a proxy for the url, if applicable.
 
     :param url: The url being for the request
@@ -898,7 +898,7 @@ def select_proxy(url: str, proxies: MutableMapping[str, str] | None) -> str | No
 
 def resolve_proxies(
     request: Request | PreparedRequest,
-    proxies: MutableMapping[str, str] | None,
+    proxies: dict[str, str] | None,
     trust_env: bool = True,
 ) -> dict[str, str]:
     """This method takes proxy information from a request and configuration
@@ -916,7 +916,7 @@ def resolve_proxies(
     url = request.url
     scheme = urlparse(url).scheme
     no_proxy = proxies.get("no_proxy")
-    new_proxies = dict(proxies)
+    new_proxies = proxies.copy()
 
     if trust_env and not should_bypass_proxies(url, no_proxy=no_proxy):
         environ_proxies = get_environ_proxies(url, no_proxy=no_proxy)

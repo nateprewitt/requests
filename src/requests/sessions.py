@@ -198,7 +198,7 @@ class SessionRedirectMixin:
         timeout: TimeoutType = None,
         verify: VerifyType = True,
         cert: CertType = None,
-        proxies: MutableMapping[str, str] | None = None,
+        proxies: dict[str, str] | None = None,
         yield_requests: bool = False,
         **adapter_kwargs: Any,
     ) -> Generator[Response, None, None]:
@@ -343,7 +343,7 @@ class SessionRedirectMixin:
     def rebuild_proxies(
         self,
         prepared_request: PreparedRequest,
-        proxies: MutableMapping[str, str] | None,
+        proxies: dict[str, str] | None,
     ) -> dict[str, str]:
         """This method re-evaluates the proxy configuration by considering the
         environment variables. If we are redirected to a URL covered by
@@ -421,7 +421,7 @@ class Session(SessionRedirectMixin):
 
     headers: CaseInsensitiveDict[str]
     auth: AuthType
-    proxies: MutableMapping[str, str]
+    proxies: dict[str, str]
     hooks: dict[str, list[HookType]]
     params: MutableMapping[str, Any]
     stream: bool
@@ -574,7 +574,7 @@ class Session(SessionRedirectMixin):
         auth: AuthType = None,
         timeout: TimeoutType = None,
         allow_redirects: bool = True,
-        proxies: MutableMapping[str, str] | None = None,
+        proxies: dict[str, str] | None = None,
         hooks: HooksType = None,
         stream: bool | None = None,
         verify: VerifyType | None = None,
@@ -824,7 +824,7 @@ class Session(SessionRedirectMixin):
     def merge_environment_settings(
         self,
         url: str,
-        proxies: MutableMapping[str, str] | None,
+        proxies: dict[str, str] | None,
         stream: bool | None,
         verify: VerifyType | None,
         cert: CertType,

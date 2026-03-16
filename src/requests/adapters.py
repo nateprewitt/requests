@@ -12,7 +12,6 @@ import os.path
 import socket  # noqa: F401  # type: ignore[reportUnusedImport]
 import typing
 import warnings
-from collections.abc import MutableMapping
 from typing import Any
 
 from urllib3.exceptions import (
@@ -134,7 +133,7 @@ class BaseAdapter:
         timeout: TimeoutType = None,
         verify: VerifyType = True,
         cert: CertType = None,
-        proxies: MutableMapping[str, str] | None = None,
+        proxies: dict[str, str] | None = None,
     ) -> Response:
         """Sends PreparedRequest object. Returns Response object.
 
@@ -457,7 +456,7 @@ class HTTPAdapter(BaseAdapter):
         self,
         request: PreparedRequest,
         verify: VerifyType,
-        proxies: MutableMapping[str, str] | None = None,
+        proxies: dict[str, str] | None = None,
         cert: CertType = None,
     ) -> HTTPConnectionPool:
         """Returns a urllib3 connection for the given request and TLS settings.
@@ -511,7 +510,7 @@ class HTTPAdapter(BaseAdapter):
         return conn
 
     def get_connection(
-        self, url: str, proxies: MutableMapping[str, str] | None = None
+        self, url: str, proxies: dict[str, str] | None = None
     ) -> HTTPConnectionPool:
         """DEPRECATED: Users should move to `get_connection_with_tls_context`
         for all subclasses of HTTPAdapter using Requests>=2.32.2.
@@ -564,7 +563,7 @@ class HTTPAdapter(BaseAdapter):
             proxy.clear()
 
     def request_url(
-        self, request: PreparedRequest, proxies: MutableMapping[str, str] | None
+        self, request: PreparedRequest, proxies: dict[str, str] | None
     ) -> str:
         """Obtain the url to use when making the final request.
 
@@ -641,7 +640,7 @@ class HTTPAdapter(BaseAdapter):
         timeout: TimeoutType = None,
         verify: VerifyType = True,
         cert: CertType = None,
-        proxies: MutableMapping[str, str] | None = None,
+        proxies: dict[str, str] | None = None,
     ) -> Response:
         """Sends PreparedRequest object. Returns Response object.
 
