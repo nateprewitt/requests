@@ -334,7 +334,7 @@ class HTTPDigestAuth(AuthBase):
         if (tell := getattr(r.body, "tell", None)) is not None:
             self._thread_local.pos = tell()
         else:
-            self._thread_local.pos = None
+            self._thread_local.pos = 0
         r.register_hook("response", self.handle_401)
         r.register_hook("response", self.handle_redirect)
         self._thread_local.num_401_calls = 1
