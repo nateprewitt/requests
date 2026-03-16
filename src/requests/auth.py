@@ -14,7 +14,7 @@ import threading
 import time
 import warnings
 from base64 import b64encode
-from typing import TYPE_CHECKING, Any, overload
+from typing import TYPE_CHECKING, Any, cast, overload
 
 from ._internal_utils import to_native_string
 from .compat import basestring, str, urlparse
@@ -22,6 +22,9 @@ from .cookies import extract_cookies_to_jar
 from .utils import parse_dict_header
 
 if TYPE_CHECKING:
+    from http.cookiejar import CookieJar
+
+    from .adapters import HTTPAdapter
     from .models import PreparedRequest, Response
 
 CONTENT_TYPE_FORM_URLENCODED: str = "application/x-www-form-urlencoded"
@@ -280,7 +283,7 @@ class HTTPDigestAuth(AuthBase):
             self._thread_local.num_401_calls = 1
             return r
 
-        assert r.request is not None
+        r.request = cast("PreparedRequest", r.request)
 
         if self._thread_local.pos is not None:
             # Rewind the file position indicator of the body to where
@@ -299,17 +302,17 @@ class HTTPDigestAuth(AuthBase):
             r.content
             r.close()
             prep = r.request.copy()
-            assert prep._cookies is not None  # type: ignore[reportPrivateUsage]
-            extract_cookies_to_jar(prep._cookies, r.request, r.raw)  # type: ignore[reportPrivateUsage]
-            prep.prepare_cookies(prep._cookies)  # type: ignore[reportPrivateUsage]
+            cookie_jar = cast("CookieJar", prep._cookies)  # type: ignore[reportPrivateUsage]
+            extract_cookies_to_jar(cookie_jar, r.request, r.raw)
+            prep.prepare_cookies(cookie_jar)
 
-            assert prep.method is not None
-            assert prep.url is not None
-            _digest_auth = self.build_digest_header(prep.method, prep.url)
+            _digest_auth = self.build_digest_header(
+                cast(str, prep.method), cast(str, prep.url)
+            )
             if _digest_auth:
                 prep.headers["Authorization"] = _digest_auth
-            assert r.connection is not None
-            _r = r.connection.send(prep, **kwargs)
+            conn = cast("HTTPAdapter", r.connection)
+            _r = conn.send(prep, **kwargs)
             _r.history.append(r)
             _r.request = prep
 
@@ -323,9 +326,9 @@ class HTTPDigestAuth(AuthBase):
         self.init_per_thread_state()
         # If we have a saved nonce, skip the 401
         if self._thread_local.last_nonce:
-            assert r.method is not None
-            assert r.url is not None
-            _digest_auth = self.build_digest_header(r.method, r.url)
+            _digest_auth = self.build_digest_header(
+                cast(str, r.method), cast(str, r.url)
+            )
             if _digest_auth:
                 r.headers["Authorization"] = _digest_auth
         if (tell := getattr(r.body, "tell", None)) is not None:

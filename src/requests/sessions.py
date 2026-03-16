@@ -14,7 +14,7 @@ import time
 from collections import OrderedDict
 from collections.abc import Generator, Mapping, MutableMapping
 from datetime import timedelta
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from ._internal_utils import to_native_string
 from ._types import is_prepared
@@ -246,8 +246,8 @@ class SessionRedirectMixin:
             # (e.g. '/path/to/resource' instead of 'http://domain.tld/path/to/resource')
             # Compliant with RFC3986, we percent encode the url.
             if not parsed.netloc:
-                assert resp.url is not None
-                url = urljoin(resp.url, requote_uri(url))
+                resp_url = cast(str, resp.url)
+                url = urljoin(resp_url, requote_uri(url))
             else:
                 url = requote_uri(url)
 
@@ -272,10 +272,10 @@ class SessionRedirectMixin:
             # Extract any cookies sent on the response to the cookiejar
             # in the new request. Because we've mutated our copied prepared
             # request, use the old one that we haven't yet touched.
-            assert prepared_request._cookies is not None  # type: ignore[reportPrivateUsage]
-            extract_cookies_to_jar(prepared_request._cookies, req, resp.raw)  # type: ignore[reportPrivateUsage]
-            merge_cookies(prepared_request._cookies, self.cookies)  # type: ignore[reportPrivateUsage]
-            prepared_request.prepare_cookies(prepared_request._cookies)  # type: ignore[reportPrivateUsage]
+            cookie_jar = cast("CookieJar", prepared_request._cookies)  # type: ignore[reportPrivateUsage]
+            extract_cookies_to_jar(cookie_jar, req, resp.raw)
+            merge_cookies(cookie_jar, self.cookies)
+            prepared_request.prepare_cookies(cookie_jar)
 
             # Rebuild auth and proxy information.
             proxies = self.rebuild_proxies(prepared_request, proxies)
@@ -323,13 +323,12 @@ class SessionRedirectMixin:
         and reapplies authentication where possible to avoid credential loss.
         """
         headers = prepared_request.headers
-        url = prepared_request.url
-        assert response.request is not None
-        assert response.request.url is not None
-        assert url is not None
+        original_request = cast(PreparedRequest, response.request)
+        original_url = cast(str, original_request.url)
+        url = cast(str, prepared_request.url)
 
         if "Authorization" in headers and self.should_strip_auth(
-            response.request.url, url
+            original_url, url
         ):
             # If we get redirected to a new host, we should strip out any
             # authentication headers.
@@ -526,8 +525,8 @@ class Session(SessionRedirectMixin):
             session's settings.
         :rtype: requests.PreparedRequest
         """
-        assert request.url is not None
-        assert request.method is not None
+        url = cast(str, request.url)
+        method = cast(str, request.method)
 
         cookies = request.cookies or {}
 
@@ -543,12 +542,12 @@ class Session(SessionRedirectMixin):
         # Set environment's basic authentication if not explicitly set.
         auth = request.auth
         if self.trust_env and not auth and not self.auth:
-            auth = get_netrc_auth(request.url)
+            auth = get_netrc_auth(url)
 
         p = PreparedRequest()
         p.prepare(
-            method=request.method.upper(),
-            url=request.url,
+            method=method.upper(),
+            url=url,
             files=request.files,
             data=request.data,
             json=request.json,
@@ -784,8 +783,8 @@ class Session(SessionRedirectMixin):
         if r.history:
             # If the hooks create history then we want those cookies too
             for resp in r.history:
-                assert resp.request is not None
-                extract_cookies_to_jar(self.cookies, resp.request, resp.raw)
+                resp_request = cast(PreparedRequest, resp.request)
+                extract_cookies_to_jar(self.cookies, resp_request, resp.raw)
 
         extract_cookies_to_jar(self.cookies, request, r.raw)
 
@@ -803,12 +802,10 @@ class Session(SessionRedirectMixin):
             history.insert(0, r)
             # Get the last request made
             r = history.pop()
-            assert isinstance(r, Response)
             r.history = history
 
         # If redirects aren't being followed, store the response on the Request for Response.next().
         if not allow_redirects:
-            assert isinstance(r, Response)
             try:
                 r._next = next(  # type: ignore[assignment]  # yield_requests=True returns PreparedRequest
                     self.resolve_redirects(r, request, yield_requests=True, **kwargs)

@@ -14,7 +14,7 @@ import copy
 import time
 from collections.abc import Iterator, MutableMapping
 from http.cookiejar import Cookie, CookieJar, CookiePolicy
-from typing import TYPE_CHECKING, Any, TypeVar, overload
+from typing import TYPE_CHECKING, Any, TypeVar, cast, overload
 
 from ._internal_utils import to_native_string
 from .compat import Morsel, cookielib, urlparse, urlunparse
@@ -59,8 +59,7 @@ class MockRequest:
         # Only return the response's URL if the user hadn't set the Host
         # header
         if not self._r.headers.get("Host"):
-            assert self._r.url is not None
-            return self._r.url
+            return cast(str, self._r.url)
         # If they did set it, retrieve it and reconstruct the expected domain
         host = to_native_string(self._r.headers["Host"], encoding="utf-8")
         parsed = urlparse(self._r.url)

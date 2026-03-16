@@ -26,6 +26,7 @@ from typing import (
     Any,
     AnyStr,
     TypeVar,
+    cast,
     overload,
 )
 
@@ -911,9 +912,8 @@ def resolve_proxies(
 
     :rtype: dict
     """
-    assert request.url is not None, "resolve_proxies requires a request with a URL"
     proxies = proxies if proxies is not None else {}
-    url = request.url
+    url = cast(str, request.url)
     scheme = urlparse(url).scheme
     no_proxy = proxies.get("no_proxy")
     new_proxies = proxies.copy()
@@ -1046,7 +1046,7 @@ def prepend_scheme_if_needed(url: str, new_scheme: str) -> str:
     if auth:
         # parse_url doesn't provide the netloc with auth
         # so we'll add it ourselves.
-        assert netloc is not None
+        netloc = cast(str, netloc)
         netloc = "@".join([auth, netloc])
     if scheme is None:
         scheme = new_scheme

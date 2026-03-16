@@ -19,6 +19,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Literal,
+    cast,
     overload,
 )
 
@@ -122,9 +123,7 @@ class RequestEncodingMixin:
 
         url: list[str] = []
 
-        # url is guaranteed to be str after prepare() has been called
-        assert self.url is not None
-        p = urlsplit(self.url)
+        p = urlsplit(cast(str, self.url))
 
         path = p.path
         if not path:
@@ -424,8 +423,8 @@ class PreparedRequest(RequestEncodingMixin, RequestHooksMixin):
     ) -> None:
         """Prepares the entire request with the given parameters."""
 
+        url = cast(str, url)
         self.prepare_method(method)
-        assert url is not None
         self.prepare_url(url, params)
         self.prepare_headers(headers)
         self.prepare_cookies(cookies)
@@ -661,8 +660,7 @@ class PreparedRequest(RequestEncodingMixin, RequestHooksMixin):
 
         # If no Auth is explicitly provided, extract it from the URL first.
         if auth is None:
-            assert self.url is not None
-            url_auth = get_auth_from_url(self.url)
+            url_auth = get_auth_from_url(cast(str, self.url))
             auth = url_auth if any(url_auth) else None
 
         if auth:
@@ -670,8 +668,8 @@ class PreparedRequest(RequestEncodingMixin, RequestHooksMixin):
                 # special-case basic HTTP auth
                 auth_handler = HTTPBasicAuth(*auth)  # type: ignore[arg-type]  # pyright widens tuple from Callable in AuthType
             else:
-                assert callable(auth)  # type: ignore[arg-type]
-                auth_handler = auth
+                # TODO: can be fixed by flipping the conditionals
+                auth_handler = cast("Callable[..., PreparedRequest]", auth)
 
             # Allow auth to make its changes.
             r = auth_handler(self)
@@ -700,8 +698,8 @@ class PreparedRequest(RequestEncodingMixin, RequestHooksMixin):
         else:
             self._cookies = cookiejar_from_dict(cookies)
 
-        assert self._cookies is not None
-        cookie_header = get_cookie_header(self._cookies, self)
+        cookies_jar = cast("CookieJar", self._cookies)
+        cookie_header = get_cookie_header(cookies_jar, self)
         if cookie_header is not None:
             self.headers["Cookie"] = cookie_header
 
@@ -948,8 +946,8 @@ class Response:
 
         if self._content_consumed:
             # simulate reading small chunks of the content
-            assert isinstance(self._content, bytes)
-            chunks = iter_slices(self._content, chunk_size)
+            content = cast(bytes, self._content)
+            chunks = iter_slices(content, chunk_size)
         else:
             chunks = generate()
 
@@ -992,9 +990,8 @@ class Response:
             chunk_size=chunk_size, decode_unicode=decode_unicode
         ):
             if pending is not None:
-                chunk = pending + chunk  # type: ignore[operator]
-            # TODO: remove after iter_lines rewrite
-            assert isinstance(chunk, (str, bytes))
+                # TODO: remove cast after iter_lines rewrite
+                chunk = cast("str | bytes", pending + chunk)  # type: ignore[operator]
 
             if delimiter:
                 lines = chunk.split(delimiter)  # type: ignore[arg-type]
