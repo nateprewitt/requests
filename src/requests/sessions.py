@@ -327,9 +327,7 @@ class SessionRedirectMixin:
         original_url = cast(str, original_request.url)
         url = cast(str, prepared_request.url)
 
-        if "Authorization" in headers and self.should_strip_auth(
-            original_url, url
-        ):
+        if "Authorization" in headers and self.should_strip_auth(original_url, url):
             # If we get redirected to a new host, we should strip out any
             # authentication headers.
             del headers["Authorization"]
