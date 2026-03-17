@@ -70,7 +70,6 @@ from .exceptions import (
 from .structures import CaseInsensitiveDict
 
 if TYPE_CHECKING:
-    from collections.abc import MutableMapping
     from http.cookiejar import CookieJar
     from io import BufferedWriter
 
@@ -559,7 +558,7 @@ def _parse_content_type_header(header: str) -> tuple[str, dict[str, Any]]:
     return content_type, params_dict
 
 
-def get_encoding_from_headers(headers: MutableMapping[str, str]) -> str | None:
+def get_encoding_from_headers(headers: CaseInsensitiveDict[str]) -> str | None:
     """Returns encodings from given HTTP Header Dict.
 
     :param headers: dictionary to extract encoding from.
