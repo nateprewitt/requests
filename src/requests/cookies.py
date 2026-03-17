@@ -343,6 +343,10 @@ class RequestsCookieJar(CookieJar, MutableMapping[str, str | None]):  # type: ig
                 dictionary[cookie.name] = cookie.value
         return dictionary
 
+    def __iter__(self) -> Iterator[Cookie]:  # type: ignore[override]
+        """RequestCookieJar's __iter__ comes from CookieJar not MutableMapping."""
+        return super().__iter__()
+
     def __contains__(self, name: object) -> bool:
         try:
             return super().__contains__(name)
