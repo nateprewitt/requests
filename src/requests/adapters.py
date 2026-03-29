@@ -253,7 +253,9 @@ class HTTPAdapter(BaseAdapter):
         :rtype: urllib3.ProxyManager
         """
         if proxy in self.proxy_manager:
-            manager = self.proxy_manager[proxy]
+            # Move to "latest" proxy cache entry on use
+            manager = self.proxy_manager.pop(proxy)
+            self.proxy_manager[proxy] = manager
         elif proxy.lower().startswith("socks"):
             username, password = get_auth_from_url(proxy)
             manager = self.proxy_manager[proxy] = SOCKSProxyManager(
@@ -275,6 +277,10 @@ class HTTPAdapter(BaseAdapter):
                 block=self._pool_block,
                 **proxy_kwargs,
             )
+
+        while len(self.proxy_manager) > self._pool_connections:
+            oldest_key = next(iter(self.proxy_manager))
+            self.proxy_manager.pop(oldest_key).clear()
 
         return manager
 
