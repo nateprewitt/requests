@@ -24,7 +24,7 @@ from urllib3.fields import RequestField
 from urllib3.filepost import encode_multipart_formdata
 from urllib3.util import parse_url
 
-from ._internal_utils import to_native_string, unicode_is_ascii
+from . import _internal_utils
 from .auth import HTTPBasicAuth
 from .compat import (
     Callable,
@@ -32,7 +32,6 @@ from .compat import (
     Mapping,
     basestring,
     builtin_str,
-    chardet,
     cookielib,
     urlencode,
     urlsplit,
@@ -396,7 +395,7 @@ class PreparedRequest(RequestEncodingMixin, RequestHooksMixin):
         """Prepares the given HTTP method."""
         self.method = method
         if self.method is not None:
-            self.method = to_native_string(self.method.upper())
+            self.method = _internal_utils.to_native_string(self.method.upper())
 
     @staticmethod
     def _get_idna_encoded_host(host):
@@ -449,7 +448,7 @@ class PreparedRequest(RequestEncodingMixin, RequestHooksMixin):
         # non-ASCII characters. This allows users to automatically get the correct IDNA
         # behaviour. For strings containing only ASCII characters, we need to also verify
         # it doesn't start with a wildcard (*), before allowing the unencoded hostname.
-        if not unicode_is_ascii(host):
+        if not host.isascii():
             try:
                 host = self._get_idna_encoded_host(host)
             except UnicodeError:
@@ -470,7 +469,7 @@ class PreparedRequest(RequestEncodingMixin, RequestHooksMixin):
             path = "/"
 
         if isinstance(params, (str, bytes)):
-            params = to_native_string(params)
+            params = _internal_utils.to_native_string(params)
 
         enc_params = self._encode_params(params)
         if enc_params:
@@ -491,7 +490,7 @@ class PreparedRequest(RequestEncodingMixin, RequestHooksMixin):
                 # Raise exception on invalid header value.
                 check_header_validity(header)
                 name, value = header
-                self.headers[to_native_string(name)] = value
+                self.headers[_internal_utils.to_native_string(name)] = value
 
     def prepare_body(self, data, files, json=None):
         """Prepares the given HTTP body data."""
@@ -790,13 +789,14 @@ class Response:
 
     @property
     def apparent_encoding(self):
-        """The apparent encoding, provided by the charset_normalizer or chardet libraries."""
-        if chardet is not None:
-            return chardet.detect(self.content)["encoding"]
-        else:
-            # If no character detection library is available, we'll fall back
-            # to a standard Python utf-8 str.
-            return "utf-8"
+        """The apparent encoding, provided by the configured character
+        detection library, or "utf-8" if no detector is set.
+
+        See :func:`requests.set_char_detector` for configuration.
+        """
+        if _internal_utils.char_detector is not None:
+            return _internal_utils.char_detector.detect(self.content)["encoding"]
+        return "utf-8"
 
     def iter_content(self, chunk_size=1, decode_unicode=False):
         """Iterates over the response data.  When stream=True is set on the
@@ -917,8 +917,9 @@ class Response:
     def text(self):
         """Content of the response, in unicode.
 
-        If Response.encoding is None, encoding will be guessed using
-        ``charset_normalizer`` or ``chardet``.
+        If Response.encoding is None, encoding will be guessed using the
+        configured character detector (see :func:`requests.set_char_detector`).
+        If no detector is configured, falls back to UTF-8.
 
         The encoding of the response content is determined based solely on HTTP
         headers, following RFC 2616 to the letter. If you can take advantage of
@@ -964,8 +965,8 @@ class Response:
         if not self.encoding and self.content and len(self.content) > 3:
             # No encoding set. JSON RFC 4627 section 3 states we should expect
             # UTF-8, -16 or -32. Detect which one to use; If the detection or
-            # decoding fails, fall back to `self.text` (using charset_normalizer to make
-            # a best guess).
+            # decoding fails, fall back to `self.text` (using character detection
+            # to make a best guess).
             encoding = guess_json_utf(self.content)
             if encoding is not None:
                 try:

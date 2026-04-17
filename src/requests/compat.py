@@ -7,7 +7,6 @@ between Python 2 and Python 3. It remains for backwards
 compatibility until the next major version.
 """
 
-import importlib
 import sys
 
 # -------
@@ -26,20 +25,7 @@ except (TypeError, AttributeError):
 # Character Detection
 # -------------------
 
-
-def _resolve_char_detection():
-    """Find supported character detection libraries."""
-    chardet = None
-    for lib in ("chardet", "charset_normalizer"):
-        if chardet is None:
-            try:
-                chardet = importlib.import_module(lib)
-            except ImportError:
-                pass
-    return chardet
-
-
-chardet = _resolve_char_detection()
+from ._internal_utils import chardet
 
 # -------
 # Pythons

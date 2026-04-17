@@ -42,6 +42,7 @@ import warnings
 
 import urllib3
 
+from . import _internal_utils
 from .exceptions import RequestsDependencyWarning
 
 try:
@@ -181,3 +182,11 @@ logging.getLogger(__name__).addHandler(NullHandler())
 
 # FileModeWarnings go off per the default.
 warnings.simplefilter("default", FileModeWarning, append=True)
+
+
+def set_char_detector(detector):
+    """Set the character detection implementation for Requests.
+
+    :param detector: A character detection module or None.
+    """
+    _internal_utils.char_detector = detector
